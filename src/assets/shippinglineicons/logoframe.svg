@@ -1,0 +1,13 @@
+<svg width="1453" height="185" viewBox="0 0 1453 185" fill="none" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<mask id="path-1-inside-1_76_51" fill="white">
+<path d="M0 0H1453V185H0V0Z"/>
+</mask>
+<path d="M0 0H1453V185H0V0Z" fill="url(#pattern0_76_51)" fill-opacity="0.1"/>
+<path d="M1453 0H1452V185H1453H1454V0H1453ZM0 185H1V0H0H-1V185H0Z" fill="#052698" fill-opacity="0.2" mask="url(#path-1-inside-1_76_51)"/>
+<defs>
+<pattern id="pattern0_76_51" patternUnits="userSpaceOnUse" patternTransform="matrix(3.52 0 0 3.52 0 0)" preserveAspectRatio="none" viewBox="0 0 16 16" width="1" height="1">
+<g id="pattern0_76_51_inner">
+<circle cx="8" cy="8" r="7.5" stroke="#052698"/>
+</g>
+</pattern></defs>
+</svg>

@@ -1,0 +1,149 @@
+@import "tailwindcss";
+
+/* ─── Font Faces ─────────────────────────────────────────── */
+
+@font-face {
+    font-family: "PPFormula";
+    src: url("./assets/PPFormula-ExtendedBold.woff") format("woff"),
+         url("/fonts/PPFormula-ExtendedBold.woff2") format("woff2");
+    font-weight: 800;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "PPFormula";
+    src: url("./assets/PPFormula-ExtendedMedium.woff") format("woff"),
+         url("/fonts/PPFormula-ExtendedMedium.woff2") format("woff2");
+    font-weight: 500;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "GTCinetype";
+    src: url("/fonts/GTCinetype-Regular.woff2") format("woff2");
+    font-weight: 500;
+    font-style: normal;
+    font-display: swap;
+}
+
+/* ─── Tailwind Theme Tokens ──────────────────────────────── */
+
+@theme {
+    --font-heading: "PPFormula", sans-serif;
+    --font-body: "GTCinetype", sans-serif;
+}
+
+/* ─── Global Base Styles ─────────────────────────────────── */
+
+@layer base {
+    *,
+    *::before,
+    *::after {
+        box-sizing: border-box;
+    }
+
+    body {
+        margin: 0;
+        height: 100vh;
+        overflow: hidden;
+        font-family: "GTCinetype", sans-serif;
+        font-weight: 400;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        background-color: #F9E4D2;
+    }
+
+    #root {
+        height: 100vh;
+        overflow: hidden;
+    }
+
+    @media (max-width: 767px) {
+        body,
+        #root {
+            overflow: auto;
+        }
+    }
+
+    /* Headings — PP Formula Extended Extrabold */
+    h1,
+    h2 {
+        font-family: "PPFormula", sans-serif;
+        font-weight: 800;
+    }
+
+    /* Subheadings — PP Formula Extended Medium */
+    h3,
+    h4,
+    h5,
+    h6 {
+        font-family: "PPFormula", sans-serif;
+        font-weight: 500;
+    }
+
+    /* Body copy, links, buttons — GT Cinetype Regular */
+    p,
+    a,
+    button,
+    input,
+    textarea,
+    select,
+    label {
+        font-family: "GTCinetype", sans-serif;
+        font-weight: 400;
+    }
+
+    /* ─── Input / Textarea / Select Reset ───────────────────── */
+    input,
+    textarea,
+    select {
+        appearance: none;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        outline: none;
+        border: none;
+        border-radius: 0;
+        background: transparent;
+        box-shadow: none;
+        padding: 0;
+        margin: 0;
+        color: inherit;
+    }
+
+    /* ─── Marquee Animation ──────────────────────────────────── */
+
+    @keyframes marquee {
+        from {
+            transform: translateX(0);
+        }
+        to {
+            transform: translateX(-50%);
+        }
+    }
+
+    .animate-marquee {
+        animation: marquee 100s linear infinite;
+    }
+
+    @keyframes marquee-reverse {
+        from {
+            transform: translateX(-50%);
+        }
+        to {
+            transform: translateX(0);
+        }
+    }
+
+    .animate-marquee-reverse {
+        animation: marquee-reverse 100s linear infinite;
+    }
+
+    input:focus,
+    textarea:focus,
+    select:focus {
+        outline: none;
+        box-shadow: none;
+    }
+}
