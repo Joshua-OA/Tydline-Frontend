@@ -6,10 +6,10 @@ function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
-    <div className="w-full flex items-center justify-center h-24 relative">
+    <div className="w-full flex items-center justify-center h-16 relative border-b border-[#052698]/25">
       {/* Hamburger — mobile only */}
       <button
-        className="absolute left-4 md:hidden flex flex-col justify-center gap-[5px] w-8 h-8 cursor-pointer"
+        className="absolute left-4 md:hidden flex flex-col justify-center gap-[5px] w-7 h-7 cursor-pointer"
         onClick={() => setMenuOpen((prev) => !prev)}
         aria-label="Toggle menu"
       >
@@ -26,18 +26,18 @@ function Header() {
 
       {/* Logo — always visible, centered on mobile */}
       <Link to="/" className="md:hidden">
-        <img src={logo} className="w-16" alt="Tydline Logo" />
+        <img src={logo} className="w-12" alt="Tydline Logo" />
       </Link>
 
       {/* Desktop nav */}
-      <div className="hidden md:flex items-center gap-14">
+      <div className="hidden md:flex items-center gap-10 text-sm">
         <Link to="/solutions">Solutions</Link>
         <Link to="/contact">Contact Us</Link>
         <Link to="/">
-          <img src={logo} className="w-20" alt="Tydline Logo" />
+          <img src={logo} className="w-14" alt="Tydline Logo" />
         </Link>
         <Link to="/about">About Us</Link>
-        <Link to="/pricing">Pricing</Link>
+        <Link to="/track?step=packages">Pricing</Link>
       </div>
 
       {/* Mobile dropdown */}
@@ -47,7 +47,7 @@ function Header() {
             <Link to="/solutions" onClick={() => setMenuOpen(false)}>Solutions</Link>
             <Link to="/contact" onClick={() => setMenuOpen(false)}>Contact Us</Link>
             <Link to="/about" onClick={() => setMenuOpen(false)}>About Us</Link>
-            <Link to="/pricing" onClick={() => setMenuOpen(false)}>Pricing</Link>
+            <Link to="/track?step=packages" onClick={() => setMenuOpen(false)}>Pricing</Link>
           </nav>
         </div>
       )}
