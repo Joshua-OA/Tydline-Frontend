@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import type { ReactElement } from "react";
 import { api, type Shipment, type ShipmentsResponse } from "../../services/api";
 import { useApp } from "../../store/appContext";
 
@@ -44,7 +45,7 @@ const DEMO_MILESTONES: DemoMilestone[] = [
 
 const PHASE_ORDER = ["Origin", "At Sea", "Transshipment", "Destination"];
 
-const PHASE_ICONS: Record<string, JSX.Element> = {
+const PHASE_ICONS: Record<string, ReactElement> = {
   "Origin": (
     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/>
