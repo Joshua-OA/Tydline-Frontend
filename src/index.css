@@ -46,8 +46,6 @@
 
     body {
         margin: 0;
-        height: 100vh;
-        overflow: hidden;
         font-family: "GTCinetype", sans-serif;
         font-weight: 400;
         -webkit-font-smoothing: antialiased;
@@ -56,15 +54,7 @@
     }
 
     #root {
-        height: 100vh;
-        overflow: hidden;
-    }
-
-    @media (max-width: 767px) {
-        body,
-        #root {
-            overflow: auto;
-        }
+        min-height: 100vh;
     }
 
     /* Headings — PP Formula Extended Extrabold */

@@ -29,8 +29,7 @@ export default function About() {
       >
         <Header />
 
-        <div className="flex-1 overflow-y-auto">
-          <div className="flex flex-col items-center px-4 py-14 gap-10 max-w-2xl mx-auto w-full">
+        <div className="flex flex-col items-center px-4 py-14 gap-10 max-w-2xl mx-auto w-full">
 
             {/* Hero */}
             <div className="text-center flex flex-col gap-3">
@@ -41,7 +40,7 @@ export default function About() {
             </div>
 
             {/* Story */}
-            <div className="flex flex-col gap-5 text-sm text-black/65 leading-relaxed">
+            <div className="flex flex-col gap-5 text-[15px] text-black/80 leading-relaxed">
               <p>
                 Every freight team we spoke to was doing the same thing: logging into carrier portals multiple times
                 a day, copy-pasting ETAs into spreadsheets, and forwarding update emails to colleagues who needed the
@@ -70,14 +69,14 @@ export default function About() {
               {values.map((v, i) => (
                 <div key={i} className="border border-[#052698]/15 bg-[#FCFDFF] px-5 py-4 flex flex-col gap-1.5">
                   <h2 className="text-[#052698] font-heading font-bold text-sm">{v.title}</h2>
-                  <p className="text-sm text-black/60 leading-relaxed">{v.body}</p>
+                  <p className="text-[15px] text-black/80 leading-relaxed">{v.body}</p>
                 </div>
               ))}
             </div>
 
             {/* Contact nudge */}
             <div className="w-full border border-[#052698]/15 bg-[#FCFDFF] px-5 py-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-              <p className="text-sm text-black/60">Have a question or want to learn more?</p>
+              <p className="text-[15px] text-black/80">Have a question or want to learn more?</p>
               <a
                 href="/contact"
                 className="text-sm font-medium text-[#052698] border border-[#052698]/30 px-4 py-2 hover:bg-[#052698]/5 transition-colors whitespace-nowrap"
@@ -87,7 +86,6 @@ export default function About() {
             </div>
 
           </div>
-        </div>
 
         <footer className="border-t border-[#052698]/15 px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-2 shrink-0">
           <p className="text-sm text-black/60">© {new Date().getFullYear()} Tydline. All rights reserved.</p>

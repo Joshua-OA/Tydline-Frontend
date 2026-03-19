@@ -44,8 +44,7 @@ export default function Solutions() {
       >
         <Header />
 
-        <div className="flex-1 overflow-y-auto">
-          <div className="flex flex-col items-center px-4 py-14 gap-12 max-w-3xl mx-auto w-full">
+        <div className="flex flex-col items-center px-4 py-14 gap-12 max-w-3xl mx-auto w-full">
 
             {/* Hero */}
             <div className="text-center flex flex-col gap-3">
@@ -53,7 +52,7 @@ export default function Solutions() {
               <h1 className="text-[#052698] text-3xl font-heading font-extrabold tracking-tight leading-snug">
                 Shipment visibility, <br className="hidden sm:block" />without the manual work
               </h1>
-              <p className="text-sm text-black/60 max-w-xl mx-auto leading-relaxed">
+              <p className="text-[15px] text-black/80 max-w-xl mx-auto leading-relaxed">
                 Tydline monitors your cargo in real time and sends you the right alert at the right moment — so you
                 can act before a delay becomes a crisis.
               </p>
@@ -70,13 +69,13 @@ export default function Solutions() {
               <h2 className="text-[#052698] font-heading font-extrabold text-xl leading-snug">
                 TASA — Tydline's Autonomous Shipping Agent
               </h2>
-              <p className="text-sm text-black/65 leading-relaxed">
+              <p className="text-[15px] text-black/80 leading-relaxed">
                 TASA is the intelligence layer behind Tydline. Rather than simply forwarding carrier status updates,
                 TASA interprets them — understanding context, identifying patterns, and deciding which changes
                 actually warrant your attention. It monitors your shipments continuously, correlates data across
                 carriers and routes, and acts on your behalf before you even know something has changed.
               </p>
-              <p className="text-sm text-black/65 leading-relaxed">
+              <p className="text-[15px] text-black/80 leading-relaxed">
                 When a vessel is rerouted, a port is congested, or a customs hold appears, TASA doesn't just log
                 it — it evaluates the downstream impact on your specific delivery window and sends a targeted alert
                 with the context you need to make a decision. No noise, no raw data dumps. Just the signal that
@@ -92,7 +91,7 @@ export default function Solutions() {
               {solutions.map((s, i) => (
                 <div key={i} className="border border-[#052698]/15 bg-[#FCFDFF] px-6 py-5 flex flex-col gap-2">
                   <h2 className="text-[#052698] font-heading font-bold text-base">{s.title}</h2>
-                  <p className="text-sm text-black/65 leading-relaxed">{s.body}</p>
+                  <p className="text-[15px] text-black/80 leading-relaxed">{s.body}</p>
                 </div>
               ))}
             </div>
@@ -101,7 +100,7 @@ export default function Solutions() {
             <div className="w-full border border-[#052698] bg-[#052698] px-6 py-6 flex flex-col sm:flex-row items-center justify-between gap-4">
               <div>
                 <p className="text-white font-heading font-bold text-base">Ready to stop chasing updates?</p>
-                <p className="text-white/60 text-sm mt-0.5">Try Tydline free — no credit card required.</p>
+                <p className="text-white/80 text-[15px] mt-0.5">Try Tydline free — no credit card required.</p>
               </div>
               <a
                 href="/pricing"
@@ -112,7 +111,6 @@ export default function Solutions() {
             </div>
 
           </div>
-        </div>
 
         <footer className="border-t border-[#052698]/15 px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-2 shrink-0">
           <p className="text-sm text-black/60">© {new Date().getFullYear()} Tydline. All rights reserved.</p>

@@ -88,16 +88,14 @@ export default function Pricing() {
   }
 
   return (
-    <div className="w-screen h-screen bg-[#F9E4D2] px-2 md:px-5 overflow-hidden">
+    <div className="w-screen min-h-screen bg-[#F9E4D2] px-2 md:px-5">
       <div
-        className="w-full h-full bg-[#FFF9F5] flex flex-col border-x-[0.5px] border-[#052698]/30 overflow-hidden"
+        className="w-full min-h-screen bg-[#FFF9F5] flex flex-col border-x-[0.5px] border-[#052698]/30"
         style={{ backgroundImage: brickSvg }}
       >
         <Header />
 
-        {/* Scrollable content */}
-        <div className="flex-1 overflow-y-auto">
-          <div className="flex flex-col items-center px-4 py-10 min-h-full">
+        <div className="flex flex-col items-center px-4 py-10">
             <div className="w-full max-w-5xl flex flex-col gap-8">
 
               {/* Heading */}
@@ -105,7 +103,7 @@ export default function Pricing() {
                 <h1 className="text-[#052698] text-3xl font-heading font-extrabold tracking-tight">
                   Friendly prices carefully curated for you
                 </h1>
-                <p className="text-sm text-black/60 mt-2">Pick the coverage that fits your shipment volume.</p>
+                <p className="text-[15px] text-black/80 mt-2">Pick the coverage that fits your shipment volume.</p>
               </div>
 
               {/* Cards */}
@@ -116,7 +114,7 @@ export default function Pricing() {
                   <div className="flex flex-col gap-2.5">
                     <p className="text-[#052698] font-heading font-bold text-lg">Starter</p>
                     <p className="text-[#052698] font-heading font-extrabold text-4xl">$50</p>
-                    <p className="text-sm text-black/60 -mt-1">per month</p>
+                    <p className="text-[15px] text-black/80 -mt-1">per month</p>
                     <div className="flex gap-1.5 flex-wrap">
                       <ChannelBadge icon={<EmailIcon size={11} muted />} label="Email" />
                       <ChannelBadge icon={<WhatsAppIcon size={11} muted />} label="WhatsApp" />
@@ -171,7 +169,7 @@ export default function Pricing() {
                   <div className="flex flex-col gap-2.5">
                     <p className="text-[#052698] font-heading font-bold text-lg">Growth</p>
                     <p className="text-[#052698] font-heading font-extrabold text-4xl">$125</p>
-                    <p className="text-sm text-black/60 -mt-1">per month</p>
+                    <p className="text-[15px] text-black/80 -mt-1">per month</p>
                     <div className="flex gap-1.5 flex-wrap">
                       <ChannelBadge icon={<EmailIcon size={11} />} label="Email" />
                       <ChannelBadge icon={<WhatsAppIcon size={11} />} label="WhatsApp" />
@@ -201,7 +199,7 @@ export default function Pricing() {
                   <div className="flex flex-col gap-2.5">
                     <p className="text-[#052698] font-heading font-bold text-lg">Pro</p>
                     <p className="text-[#052698] font-heading font-extrabold text-4xl">$1,000</p>
-                    <p className="text-sm text-black/60 -mt-1">per month</p>
+                    <p className="text-[15px] text-black/80 -mt-1">per month</p>
                     <div className="flex gap-1.5 flex-wrap">
                       <ChannelBadge icon={<EmailIcon size={11} />} label="Email" />
                       <ChannelBadge icon={<WhatsAppIcon size={11} />} label="WhatsApp" />
@@ -263,7 +261,6 @@ export default function Pricing() {
 
             </div>
           </div>
-        </div>
 
         {/* Footer */}
         <footer className="border-t border-[#052698]/15 px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-2 shrink-0">

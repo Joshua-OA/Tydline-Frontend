@@ -47,7 +47,7 @@ function Header() {
         {/* Right — Login */}
         <Link
           to="/track?step=auth"
-          className="text-sm font-medium px-4 py-2 border border-[#052698] bg-white ring-1 ring-[#052698]/30 ring-offset-2"
+          className="text-sm font-medium px-8 py-2.5 border border-[#052698] bg-white ring-1 ring-[#052698]/30 ring-offset-2"
         >
           Login
         </Link>
