@@ -14,17 +14,61 @@ async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
     throw new Error(FRIENDLY_ERROR);
   }
   const data: unknown = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error((data as { message?: string }).message ?? FRIENDLY_ERROR);
+  console.log(`[API] ${options?.method ?? "GET"} ${path}`, data);
+  if (!res.ok) {
+    const err = data as { message?: string; detail?: string };
+    throw new Error(err.message ?? err.detail ?? FRIENDLY_ERROR);
+  }
   return data as T;
 }
+
+// ── Types ─────────────────────────────────────────────────────────────────────
+
+export type Shipment = {
+  id: string;
+  vessel: string;
+  line: string;
+  origin: string;
+  destination: string;
+  eta: string;
+  days_left: number;
+  status: string;
+  progress: number;
+};
+
+export type ShipmentsResponse = {
+  pending_approval: Shipment[];
+  active: Shipment[];
+  completed: Shipment[];
+  total_pending_approval: number;
+  total_active: number;
+  total_completed: number;
+};
+
+export type ApiApproval = {
+  id: string;
+  container_id: string;
+  vessel: string;
+  origin: string;
+  destination: string;
+  submitted_at: string;
+  status: string;
+};
+
+export type NotifyParty = {
+  id: string;
+  name: string;
+  channel: "email" | "whatsapp";
+  contact_value: string;
+};
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 
 export const api = {
-  requestLink: (email: string, company_name: string) =>
+  requestLink: (email: string, company_name: string, metadata?: Record<string, string>) =>
     apiFetch<{ message: string }>("/auth/request-link", {
       method: "POST",
-      body: JSON.stringify({ email, company_name }),
+      body: JSON.stringify({ email, company_name, ...(metadata ? { metadata } : {}) }),
     }),
 
   verifyToken: (token: string) =>
@@ -49,11 +93,23 @@ export const api = {
 
   // ── Onboarding ────────────────────────────────────────────────────────────
 
+  checkTrackingPrefix: (prefix: string) =>
+    apiFetch<{ available: boolean }>(`/onboarding/tracking-email/check?prefix=${encodeURIComponent(prefix)}`),
+
   setTrackingEmail: (tracking_email: string) =>
     apiFetch<{ user_id: string; tracking_email: string; subscription_status: string }>(
       "/onboarding/tracking-email",
       { method: "POST", body: JSON.stringify({ tracking_email }) }
     ),
+
+  getWhatsAppPhone: () =>
+    apiFetch<{ phone: string | null }>("/onboarding/whatsapp-phone"),
+
+  setWhatsAppPhone: (phone: string) =>
+    apiFetch<{ user_id: string; phone: string }>("/onboarding/whatsapp-phone", {
+      method: "POST",
+      body: JSON.stringify({ phone }),
+    }),
 
   // ── Account ───────────────────────────────────────────────────────────────
 
@@ -61,30 +117,44 @@ export const api = {
     apiFetch<unknown>("/account/plans"),
 
   getPlan: () =>
-    apiFetch<unknown>("/account/plan"),
+    apiFetch<{ plan: string; status: string }>("/account/plan"),
 
   // ── Dashboard ─────────────────────────────────────────────────────────────
 
   getShipments: () =>
-    apiFetch<unknown>("/dashboard/shipments"),
+    apiFetch<ShipmentsResponse>("/dashboard/shipments"),
 
   getActiveShipments: () =>
-    apiFetch<unknown>("/dashboard/shipments/active"),
+    apiFetch<Shipment[]>("/dashboard/shipments/active"),
 
   getCompletedShipments: () =>
-    apiFetch<unknown>("/dashboard/shipments/completed"),
+    apiFetch<Shipment[]>("/dashboard/shipments/completed"),
+
+  submitShipment: (data: Record<string, unknown>) =>
+    apiFetch<{ id: string; status: string }>("/dashboard/shipments/submit", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  // ── Approvals ─────────────────────────────────────────────────────────────
+
+  getApprovals: () =>
+    apiFetch<ApiApproval[]>("/dashboard/approvals"),
+
+  approveShipment: (id: string) =>
+    apiFetch<{ message: string }>(`/dashboard/approvals/${id}/approve`, { method: "POST" }),
 
   // ── Notify Parties ────────────────────────────────────────────────────────
 
   getNotifyParties: () =>
-    apiFetch<unknown>("/notify-parties"),
+    apiFetch<NotifyParty[]>("/notify-parties"),
 
   addNotifyParty: (name: string, channel: "email" | "whatsapp", contact_value: string) =>
-    apiFetch<unknown>("/notify-parties", {
+    apiFetch<NotifyParty>("/notify-parties", {
       method: "POST",
       body: JSON.stringify({ name, channel, contact_value }),
     }),
 
   deleteNotifyParty: (id: string) =>
-    apiFetch<unknown>(`/notify-parties/${id}`, { method: "DELETE" }),
+    apiFetch<{ message: string }>(`/notify-parties/${id}`, { method: "DELETE" }),
 };

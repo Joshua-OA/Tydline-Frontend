@@ -1,18 +1,18 @@
 import { useEffect, useState } from "react";
 import { useSearchParams, useNavigate, Link } from "react-router-dom";
 import { api } from "../services/api";
-import { useApp } from "../store/appContext";
-import logo from "../assets/tydline-sqaurlogo.png";
+import { useApp, type SelectedPackage } from "../store/appContext";
+const logo = "/tydline-sqaurlogo.png";
 
 const brickSvg = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='30'%3E%3Crect x='0' y='0' width='60' height='15' fill='none' stroke='%23052698' stroke-width='0.3' opacity='0.03'/%3E%3Crect x='-30' y='15' width='60' height='15' fill='none' stroke='%23052698' stroke-width='0.3' opacity='0.03'/%3E%3Crect x='30' y='15' width='60' height='15' fill='none' stroke='%23052698' stroke-width='0.3' opacity='0.03'/%3E%3C/svg%3E")`;
 
 export default function AuthVerify() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
-  const { setUser, subscriptionStatus, trackingEmail } = useApp();
+  const { setUser, setSelectedPackage, subscriptionStatus, trackingEmail } = useApp();
 
   const [status, setStatus] = useState<"verifying" | "success" | "error">("verifying");
-  const [errorMsg, setErrorMsg] = useState("");
+  const [, setErrorMsg] = useState("");
 
   useEffect(() => {
     const token = params.get("token");
@@ -20,6 +20,27 @@ export default function AuthVerify() {
       setStatus("error");
       setErrorMsg("No verification token found in the link.");
       return;
+    }
+
+    // Restore context from state param (embedded by backend in the magic link)
+    const stateParam = params.get("state");
+    if (stateParam) {
+      try {
+        const meta = JSON.parse(atob(stateParam)) as Record<string, string>;
+        if (meta.tracking_query) {
+          localStorage.setItem("tydline_tracking_query", meta.tracking_query);
+        }
+        if (meta.plan && meta.plan_name && meta.plan_amount && meta.plan_label) {
+          setSelectedPackage({
+            plan: meta.plan as SelectedPackage["plan"],
+            name: meta.plan_name,
+            amount: meta.plan_amount,
+            label: meta.plan_label,
+          });
+        }
+      } catch {
+        // malformed state — ignore
+      }
     }
 
     api
@@ -42,6 +63,11 @@ export default function AuthVerify() {
       .catch((e: unknown) => {
         setStatus("error");
         setErrorMsg(e instanceof Error ? e.message : "Verification failed. The link may have expired.");
+        const savedQuery = localStorage.getItem("tydline_tracking_query") ?? "";
+        const dest = savedQuery
+          ? `/track?q=${encodeURIComponent(savedQuery)}&step=auth&retry=true`
+          : null;
+        setTimeout(() => { if (dest) navigate(dest); }, 2000);
       });
     // run once on mount
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -99,14 +125,8 @@ export default function AuthVerify() {
                 </div>
                 <div>
                   <p className="text-[#052698] font-heading font-bold text-lg">Link expired</p>
-                  <p className="text-black/50 text-sm mt-1">{errorMsg}</p>
+                  <p className="text-black/50 text-sm mt-1">Redirecting you back to request a new one…</p>
                 </div>
-                <Link
-                  to="/"
-                  className="bg-[#052698] text-white text-sm font-medium px-6 py-2.5 hover:bg-[#052698]/90 transition-colors"
-                >
-                  Back to home
-                </Link>
               </>
             )}
           </div>

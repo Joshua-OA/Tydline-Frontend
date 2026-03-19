@@ -1,165 +1,95 @@
-import { useState } from "react";
-
-type ApprovalStatus = "pending" | "approved" | "rejected";
-
-type Approval = {
-  id: string;
-  type: string;
-  container: string;
-  requestedBy: string;
-  date: string;
-  description: string;
-  status: ApprovalStatus;
-};
-
-const initialApprovals: Approval[] = [
-  {
-    id: "APR-2026-041",
-    type: "Demurrage Waiver",
-    container: "MSKU7234891",
-    requestedBy: "Logistics Team",
-    date: "Mar 17, 2026",
-    description: "Requesting waiver for 4-day demurrage charge at Rotterdam port due to vessel delay beyond shipper control.",
-    status: "pending",
-  },
-  {
-    id: "APR-2026-040",
-    type: "Custom Clearance",
-    container: "HLCU4521037",
-    requestedBy: "Import Ops",
-    date: "Mar 16, 2026",
-    description: "Pre-clearance approval needed for hazardous cargo category B before vessel arrival at Hamburg.",
-    status: "pending",
-  },
-  {
-    id: "APR-2026-039",
-    type: "Route Amendment",
-    container: "CMAU1983204",
-    requestedBy: "Freight Forwarder",
-    date: "Mar 15, 2026",
-    description: "Transshipment port change from Port Klang to Tanjung Pelepas due to capacity constraints.",
-    status: "approved",
-  },
-  {
-    id: "APR-2026-038",
-    type: "Detention Extension",
-    container: "OOLU6782341",
-    requestedBy: "Warehouse Ops",
-    date: "Mar 14, 2026",
-    description: "Requesting 7-day detention period extension for container OOLU6782341 pending warehouse availability.",
-    status: "rejected",
-  },
-  {
-    id: "APR-2026-037",
-    type: "Overweight Declaration",
-    container: "MAEU9043156",
-    requestedBy: "Compliance",
-    date: "Mar 13, 2026",
-    description: "VGM re-submission required — initial declaration was 320kg below actual verified gross mass.",
-    status: "pending",
-  },
-];
-
-const statusStyles: Record<ApprovalStatus, string> = {
-  pending: "bg-amber-50 text-amber-700 border border-amber-200",
-  approved: "bg-green-50 text-green-700 border border-green-200",
-  rejected: "bg-red-50 text-red-600 border border-red-200",
-};
-
-const statusLabel: Record<ApprovalStatus, string> = {
-  pending: "Pending",
-  approved: "Approved",
-  rejected: "Rejected",
-};
+import { useState, useEffect } from "react";
+import { api, type ApiApproval } from "../../services/api";
 
 function Approvals() {
-  const [approvals, setApprovals] = useState<Approval[]>(initialApprovals);
+  const [approvals, setApprovals] = useState<ApiApproval[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [approving, setApproving] = useState<string | null>(null);
 
-  function handleApprove(id: string) {
-    setApprovals((prev) => prev.map((a) => (a.id === id ? { ...a, status: "approved" } : a)));
+  useEffect(() => {
+    api.getApprovals()
+      .then((data) => {
+        console.log("[Approvals] raw response:", data);
+        setApprovals(Array.isArray(data) ? data : []);
+      })
+      .catch((e: Error) => setError(e.message))
+      .finally(() => setLoading(false));
+  }, []);
+
+  async function handleApprove(id: string) {
+    setApproving(id);
+    setError(null);
+    try {
+      await api.approveShipment(id);
+      setApprovals((prev) => prev.filter((a) => a.id !== id));
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setApproving(null);
+    }
   }
 
-  function handleReject(id: string) {
-    setApprovals((prev) => prev.map((a) => (a.id === id ? { ...a, status: "rejected" } : a)));
-  }
-
-  const pending = approvals.filter((a) => a.status === "pending").length;
+  const pending = approvals.length;
 
   return (
     <div className="p-6 md:p-8 flex flex-col gap-7">
       {/* Header */}
       <div>
-        <h2 className="text-[#052698] text-2xl font-heading font-extrabold tracking-tight">Approvals</h2>
-        <p className="text-black/70 text-base mt-0.5">
-          {pending > 0 ? `${pending} item${pending > 1 ? "s" : ""} awaiting your review` : "All items reviewed"}
+        <h2 className="text-[#052698] text-[26.6px] font-heading font-extrabold tracking-tight">Approvals</h2>
+        <p className="text-black/85 text-[18.6px] mt-0.5">
+          {loading ? "Loading…" : pending > 0 ? `${pending} shipment${pending > 1 ? "s" : ""} awaiting approval` : "All shipments approved"}
         </p>
       </div>
 
-      {/* Filter tabs */}
-      <div className="flex gap-0 border border-[#052698]/20 w-fit bg-[#FCFDFF]">
-        {(["All", "Pending", "Approved", "Rejected"] as const).map((tab) => (
-          <button
-            key={tab}
-            className="text-sm px-4 py-2 text-black hover:bg-[#052698]/5 hover:text-[#052698] transition-colors first:border-r border-[#052698]/20 cursor-pointer"
-          >
-            {tab}
-          </button>
-        ))}
-      </div>
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-600 text-[16.6px] px-4 py-3">{error}</div>
+      )}
 
-      {/* Approval items */}
-      <div className="flex flex-col gap-3">
-        {approvals.map((item) => (
-          <div key={item.id} className="bg-[#FCFDFF] border border-[#052698]/20 p-5">
-            <div className="flex flex-col md:flex-row md:items-start gap-4">
-              {/* Content */}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-3 flex-wrap mb-1">
-                  <span className="text-[#052698] font-medium text-sm">{item.id}</span>
-                  <span className={`text-xs px-2 py-0.5 ${statusStyles[item.status]}`}>
-                    {statusLabel[item.status]}
-                  </span>
-                  <span className="text-xs px-2 py-0.5 bg-[#052698]/6 text-[#052698]/70 border border-[#052698]/15">
-                    {item.type}
-                  </span>
+      {loading ? (
+        <div className="text-[16.6px] text-black/85 text-center py-12">Loading…</div>
+      ) : approvals.length === 0 ? (
+        <div className="bg-[#FCFDFF] border border-[#052698]/20 p-10 text-center">
+          <p className="text-black/85 text-[16.6px]">No shipments pending approval.</p>
+          <p className="text-black/55 text-[14.6px] mt-1">Submitted shipments are auto-approved after 3 days.</p>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-3">
+          {approvals.map((item) => (
+            <div key={item.id} className="bg-[#FCFDFF] border border-[#052698]/20 p-5">
+              <div className="flex flex-col md:flex-row md:items-start gap-4">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-3 flex-wrap mb-1">
+                    <span className="text-[#052698] font-medium text-[16.6px]">{item.container_id}</span>
+                    <span className="text-[14.6px] px-2 py-0.5 bg-amber-50 text-amber-700 border border-amber-200">
+                      Pending Approval
+                    </span>
+                  </div>
+                  <p className="text-[16.6px] text-black/80 mb-1">
+                    {item.vessel && <>{item.vessel} · </>}
+                    {item.origin} → {item.destination}
+                  </p>
+                  <p className="text-[14.6px] text-black/80">Submitted {item.submitted_at}</p>
                 </div>
-                <p className="text-sm text-black/60 mb-2">
-                  Container: <span className="text-[#052698] font-medium">{item.container}</span>
-                  {" · "}Requested by {item.requestedBy}
-                  {" · "}{item.date}
-                </p>
-                <p className="text-sm text-black/80 leading-relaxed">{item.description}</p>
-              </div>
 
-              {/* Actions */}
-              {item.status === "pending" && (
                 <div className="flex gap-2 shrink-0">
                   <button
-                    onClick={() => handleReject(item.id)}
-                    className="border border-red-200 text-red-600 text-sm px-4 py-2 hover:bg-red-50 transition-colors cursor-pointer"
-                  >
-                    Reject
-                  </button>
-                  <button
                     onClick={() => handleApprove(item.id)}
-                    className="bg-[#052698] text-white text-sm px-4 py-2 hover:bg-[#052698]/90 transition-colors cursor-pointer"
+                    disabled={approving === item.id}
+                    className="bg-[#052698] text-white text-[16.6px] px-4 py-2 hover:bg-[#052698]/90 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Approve
+                    {approving === item.id ? "Approving…" : "Approve Now"}
                   </button>
                 </div>
-              )}
-
-              {item.status !== "pending" && (
-                <div className="shrink-0">
-                  <span className={`text-xs px-3 py-1.5 ${statusStyles[item.status]}`}>
-                    {statusLabel[item.status]}
-                  </span>
-                </div>
-              )}
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
+
+      <p className="text-[14.6px] text-black/55">
+        Shipments pending approval for more than 3 days are automatically approved by the system.
+      </p>
     </div>
   );
 }

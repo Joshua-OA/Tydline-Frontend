@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { api } from "../services/api";
 import { useApp, type SelectedPackage } from "../store/appContext";
 import Header from "../layouts/Header";
@@ -73,9 +73,14 @@ function ChannelBadge({ icon, label }: { icon: React.ReactNode; label: string })
 
 export default function TrackingResults() {
   const [params] = useSearchParams();
-  const { setSelectedPackage } = useApp();
+  const navigate = useNavigate();
+  const { setSelectedPackage, selectedPackage } = useApp();
 
   const query = params.get("q") ?? "";
+
+  function goToStep(s: Step, extra = "") {
+    navigate(`/track?q=${encodeURIComponent(query)}&step=${s}${extra}`);
+  }
   const q = query.toUpperCase();
   const shipment =
     mockShipments.find(
@@ -86,9 +91,10 @@ export default function TrackingResults() {
         s.destination.toUpperCase().includes(q)
     ) ?? mockShipments[0];
 
-  const fromNav = params.get("step") === "packages";
-  const [isLoading, setIsLoading] = useState(!fromNav);
-  const [step, setStep] = useState<Step>(fromNav ? "packages" : "result");
+  const stepParam = params.get("step") as Step | null;
+  const isRetry = stepParam === "auth" && params.get("retry") === "true";
+  const step: Step = (["packages", "auth", "check-email"].includes(stepParam ?? "") ? stepParam! : "result");
+  const [isLoading, setIsLoading] = useState(step === "result");
   const [starterChannel, setStarterChannel] = useState<"email" | "whatsapp" | null>(null);
   const [channelError, setChannelError] = useState("");
   const [customAmount, setCustomAmount] = useState("");
@@ -104,7 +110,7 @@ export default function TrackingResults() {
   function handleSelectPlan(pkg: SelectedPackage) {
     setSelectedPackage(pkg);
     localStorage.setItem("tydline_tracking_query", query);
-    setStep("auth");
+    goToStep("auth");
   }
 
   function handleStarterSelect() {
@@ -135,8 +141,17 @@ export default function TrackingResults() {
     setError("");
     setSubmitting(true);
     try {
-      await api.requestLink(email.trim(), "");
-      setStep("check-email");
+      const metadata: Record<string, string> = {};
+      if (query) metadata.tracking_query = query;
+      if (selectedPackage) {
+        metadata.plan = selectedPackage.plan;
+        metadata.plan_name = selectedPackage.name;
+        metadata.plan_amount = selectedPackage.amount;
+        metadata.plan_label = selectedPackage.label;
+      }
+      localStorage.setItem("tydline_auth_email", email.trim());
+      await api.requestLink(email.trim(), "", Object.keys(metadata).length ? metadata : undefined);
+      goToStep("check-email");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong.");
     } finally {
@@ -145,8 +160,7 @@ export default function TrackingResults() {
   }
 
   function backFromStep() {
-    if (step === "packages") setStep("result");
-    else if (step === "auth") setStep("packages");
+    navigate(-1);
   }
 
   return (
@@ -261,7 +275,7 @@ export default function TrackingResults() {
                     ))}
                   </div>
                   <button
-                    onClick={() => setStep("packages")}
+                    onClick={() => goToStep("packages")}
                     className="bg-[#052698] text-white text-sm font-medium px-6 py-3 hover:bg-[#052698]/90 transition-colors cursor-pointer w-full md:w-auto md:self-start"
                   >
                     Subscribe for notifications →
@@ -395,7 +409,7 @@ export default function TrackingResults() {
                       <span className="text-sm text-[#052698] font-medium">450 shipments / mo</span>
                     </div>
                     <ul className="flex flex-col gap-2 flex-1">
-                      {["Email + WhatsApp + ERP", "All alert types", "ERP / TMS integration", "Priority support", "Dedicated account manager"].map((f) => (
+                      {["Email + WhatsApp + ERP", "All alert types", "ERP / TMS integration"].map((f) => (
                         <li key={f} className="flex items-start gap-2 text-sm text-black">
                           <CheckIcon />{f}
                         </li>
@@ -448,12 +462,19 @@ export default function TrackingResults() {
             {/* ── AUTH ── */}
             {step === "auth" && (
               <div className="w-full max-w-md flex flex-col gap-6">
-                <button
-                  onClick={backFromStep}
-                  className="text-sm text-[#052698]/60 hover:text-[#052698] transition-colors cursor-pointer self-start"
-                >
-                  ← Back
-                </button>
+                {!isRetry && (
+                  <button
+                    onClick={backFromStep}
+                    className="text-sm text-[#052698]/60 hover:text-[#052698] transition-colors cursor-pointer self-start"
+                  >
+                    ← Back
+                  </button>
+                )}
+                {isRetry && (
+                  <div className="border border-[#052698]/15 bg-[#FCFDFF] px-4 py-3 text-sm text-black/70 leading-relaxed">
+                    Sorry, that link has expired. Please request a new one below.
+                  </div>
+                )}
                 <div>
                   <h2 className="text-[#052698] text-2xl font-heading font-extrabold tracking-tight">Get started</h2>
                   <p className="text-sm text-black mt-1">We'll send a secure login link to your email — no password needed.</p>
@@ -485,25 +506,25 @@ export default function TrackingResults() {
 
             {/* ── CHECK EMAIL ── */}
             {step === "check-email" && (
-              <div className="w-full max-w-md flex flex-col items-center gap-6 text-center pt-6">
-                <div className="w-16 h-16 border border-[#052698]/20 flex items-center justify-center bg-[#FCFDFF]">
-                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#052698" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+              <div className="w-full max-w-md flex flex-col items-center gap-4 text-center pt-4">
+                <div className="w-12 h-12 border border-[#052698]/20 flex items-center justify-center bg-[#FCFDFF]">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#052698" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                   </svg>
                 </div>
-                <div className="flex flex-col gap-2">
-                  <h2 className="text-[#052698] text-2xl font-heading font-extrabold tracking-tight">Check your email</h2>
-                  <p className="text-base text-black leading-relaxed">
+                <div className="flex flex-col gap-1.5">
+                  <h2 className="text-[#052698] text-xl font-heading font-extrabold tracking-tight">Check your email</h2>
+                  <p className="text-sm text-black leading-relaxed">
                     We sent a secure login link to{" "}
                     <span className="text-[#052698] font-medium">{email}</span>.
                   </p>
-                  <p className="text-base text-black leading-relaxed">
+                  <p className="text-sm text-black leading-relaxed">
                     Click the link to continue to payment.
                   </p>
                 </div>
-                <div className="border border-[#052698]/15 bg-[#FCFDFF] px-6 py-5 text-base text-black text-left w-full">
+                <div className="border border-[#052698]/15 bg-[#FCFDFF] px-5 py-4 text-sm text-black text-left w-full">
                   Didn't receive it? Check your spam folder, or{" "}
-                  <button onClick={() => setStep("auth")} className="text-[#052698] underline cursor-pointer">
+                  <button onClick={() => goToStep("auth")} className="text-[#052698] underline cursor-pointer">
                     try a different email
                   </button>
                   .

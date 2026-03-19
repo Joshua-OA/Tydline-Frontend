@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { api, type NotifyParty } from "../../services/api";
+import { useApp } from "../../store/appContext";
 
 type Recipient = {
   id: string;
@@ -124,49 +126,50 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: () => void 
   return (
     <button
       onClick={onChange}
-      className={`relative w-10 h-5 rounded-full transition-colors cursor-pointer shrink-0 ${checked ? "bg-[#052698]" : "bg-black/25"}`}
+      className={`relative inline-flex items-center w-10 h-5 rounded-full transition-colors cursor-pointer shrink-0 ${checked ? "bg-[#052698]" : "bg-black/25"}`}
     >
-      <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${checked ? "translate-x-5" : "translate-x-0"}`} />
+      <span className={`absolute top-[3px] left-[3px] w-[14px] h-[14px] rounded-full bg-white shadow-sm transition-transform ${checked ? "translate-x-5" : "translate-x-0"}`} />
     </button>
   );
 }
 
-function Notifications() {
-  const [platforms, setPlatforms] = useState<Platform[]>([
-    {
-      id: "whatsapp",
-      name: "WhatsApp",
-      type: "whatsapp",
-      connected: true,
-      enabled: true,
-      recipients: [
-        { id: "w1", value: "+1 415 555 0192", enabled: true },
-        { id: "w2", value: "+44 7700 900123", enabled: true },
-      ],
-    },
-    {
-      id: "email",
-      name: "Email",
-      type: "email",
-      connected: true,
-      enabled: true,
-      recipients: [
-        { id: "e1", value: "ops@tydline.com", enabled: true },
-        { id: "e2", value: "logistics@company.com", enabled: false },
-      ],
-    },
-    {
-      id: "erp",
-      name: "ERP / TMS",
-      type: "erp",
-      connected: false,
-      enabled: false,
-      recipients: [],
-    },
-  ]);
+const EMPTY_PLATFORMS: Platform[] = [
+  { id: "whatsapp", name: "WhatsApp", type: "whatsapp", connected: true, enabled: true, recipients: [] },
+  { id: "email", name: "Email", type: "email", connected: true, enabled: true, recipients: [] },
+  { id: "erp", name: "ERP / TMS", type: "erp", connected: false, enabled: false, recipients: [] },
+];
 
+function Notifications() {
+  const { selectedPackage } = useApp();
+  const [plan, setPlan] = useState<string | null>(null);
+  const hasWhatsApp = plan === null || plan === "growth" || plan === "pro" || plan === "custom";
+
+  const [platforms, setPlatforms] = useState<Platform[]>(EMPTY_PLATFORMS);
   const [newValues, setNewValues] = useState<Record<string, string>>({});
   const [selectedCodes, setSelectedCodes] = useState<Record<string, string>>({ whatsapp: "+1" });
+  const [apiError, setApiError] = useState<string | null>(null);
+  const [saving, setSaving] = useState<string | null>(null);
+
+  useEffect(() => {
+    api.getPlan()
+      .then((data) => { if (data?.plan) setPlan(data.plan); })
+      .catch(() => {/* keep context fallback */});
+  }, []);
+
+  useEffect(() => {
+    api.getNotifyParties().then((data) => {
+      const parties: NotifyParty[] = Array.isArray(data) ? data : [];
+      setPlatforms((prev) =>
+        prev.map((p) => {
+          if (p.type === "erp") return p;
+          const recipients = parties
+            .filter((party) => party.channel === p.type)
+            .map((party) => ({ id: party.id, value: party.contact_value, enabled: true }));
+          return { ...p, recipients };
+        })
+      );
+    }).catch((e: Error) => setApiError(e.message));
+  }, []);
 
   function togglePlatform(id: string) {
     setPlatforms((prev) =>
@@ -192,63 +195,97 @@ function Notifications() {
           : p
       )
     );
+    api.deleteNotifyParty(recipientId).catch((e: Error) => setApiError(e.message));
   }
 
-  function addRecipient(platformId: string, type: Platform["type"]) {
+  async function addRecipient(platformId: string, type: Platform["type"]) {
     const raw = newValues[platformId]?.trim();
-    if (!raw) return;
-    const value = type === "whatsapp" ? `${selectedCodes[platformId] ?? "+1"} ${raw}` : raw;
-    setPlatforms((prev) =>
-      prev.map((p) =>
-        p.id === platformId
-          ? { ...p, recipients: [...p.recipients, { id: `${platformId}-${Date.now()}`, value, enabled: true }] }
-          : p
-      )
-    );
-    setNewValues((prev) => ({ ...prev, [platformId]: "" }));
+    if (!raw || type === "erp") return;
+    const channel = type as "email" | "whatsapp";
+    const contact_value = channel === "whatsapp" ? `${selectedCodes[platformId] ?? "+1"} ${raw}` : raw;
+    setSaving(platformId);
+    setApiError(null);
+    try {
+      const party = await api.addNotifyParty(contact_value, channel, contact_value);
+      setPlatforms((prev) =>
+        prev.map((p) =>
+          p.id === platformId
+            ? { ...p, recipients: [...p.recipients, { id: party.id, value: party.contact_value, enabled: true }] }
+            : p
+        )
+      );
+      setNewValues((prev) => ({ ...prev, [platformId]: "" }));
+    } catch (e) {
+      setApiError((e as Error).message);
+    } finally {
+      setSaving(null);
+    }
   }
 
   return (
     <div className="p-6 md:p-8 flex flex-col gap-7">
       {/* Header */}
+      {apiError && (
+        <div className="bg-red-50 border border-red-200 text-red-600 text-[16.6px] px-4 py-3">{apiError}</div>
+      )}
       <div>
-        <h2 className="text-[#052698] text-2xl font-heading font-extrabold tracking-tight">Notifications</h2>
-        <p className="text-black/60 text-base mt-0.5">Manage which platforms and recipients receive shipment notifications</p>
+        <h2 className="text-[#052698] text-[26.6px] font-heading font-extrabold tracking-tight">Notifications</h2>
+        <p className="text-black/85 text-[18.6px] mt-0.5">Manage which platforms and recipients receive shipment notifications</p>
       </div>
 
       {/* Platform cards */}
       <div className="flex flex-col gap-4">
-        {platforms.map((platform) => (
-          <div key={platform.id} className="bg-[#FCFDFF] border border-[#052698]/20">
+        {platforms.map((platform) => {
+          const isLocked = platform.type === "whatsapp" && !hasWhatsApp;
+          const isComingSoon = platform.type === "erp";
+
+          return (
+          <div key={platform.id} className={`bg-[#FCFDFF] border border-[#052698]/20 ${isLocked || isComingSoon ? "opacity-70" : ""}`}>
 
             {/* Platform header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-[#052698]/10">
               <div className="flex items-center gap-3">
                 <span className={platformColor[platform.type]}>{platformIcon[platform.type]}</span>
                 <div>
-                  <p className="text-[#052698] font-heading font-bold text-base">{platform.name}</p>
-                  <p className="text-xs text-black/50 mt-0.5">
-                    {platform.connected
-                      ? `${platform.recipients.length} recipient${platform.recipients.length !== 1 ? "s" : ""}`
-                      : "Not connected"}
+                  <div className="flex items-center gap-2">
+                    <p className="text-[#052698] font-heading font-bold text-[18.6px]">{platform.name}</p>
+                    {isLocked && (
+                      <span className="text-[12.6px] px-1.5 py-0.5 bg-amber-50 text-amber-700 border border-amber-200">
+                        Growth plan
+                      </span>
+                    )}
+                    {isComingSoon && (
+                      <span className="text-[12.6px] px-1.5 py-0.5 bg-black/5 text-black/85 border border-black/10">
+                        Coming soon
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[14.6px] mt-0.5 text-[#052698]/60">
+                    {isLocked
+                      ? "Upgrade to Growth or Pro to enable WhatsApp"
+                      : isComingSoon
+                      ? "ERP / TMS integration coming soon"
+                      : `${platform.recipients.length} recipient${platform.recipients.length !== 1 ? "s" : ""} configured`}
                   </p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                {!platform.connected && (
-                  <button className="text-sm border border-[#052698] text-[#052698] px-4 py-1.5 hover:bg-[#052698] hover:text-white transition-colors cursor-pointer">
+                {!isLocked && !isComingSoon && !platform.connected && (
+                  <button className="text-[16.6px] border border-[#052698] text-[#052698] px-4 py-1.5 hover:bg-[#052698] hover:text-white transition-colors cursor-pointer">
                     Connect
                   </button>
                 )}
-                <Toggle
-                  checked={platform.enabled && platform.connected}
-                  onChange={() => togglePlatform(platform.id)}
-                />
+                {!isLocked && !isComingSoon && (
+                  <Toggle
+                    checked={platform.enabled && platform.connected}
+                    onChange={() => togglePlatform(platform.id)}
+                  />
+                )}
               </div>
             </div>
 
-            {/* Recipients — only show if connected */}
-            {platform.connected && (
+            {/* Recipients — only show if connected and accessible */}
+            {platform.connected && !isLocked && !isComingSoon && (
               <div className="px-5 py-4 flex flex-col gap-3">
 
                 {/* Recipient list */}
@@ -256,14 +293,14 @@ function Notifications() {
                   <div className="flex flex-col">
                     {platform.recipients.map((r) => (
                       <div key={r.id} className="flex items-center justify-between gap-3 py-2.5 border-b border-[#052698]/8 last:border-0">
-                        <span className={`text-sm flex-1 ${r.enabled ? "text-black" : "text-black/35 line-through"}`}>
+                        <span className={`text-[16.6px] flex-1 font-medium ${r.enabled ? "text-[#052698]" : "text-black/85 line-through"}`}>
                           {r.value}
                         </span>
                         <div className="flex items-center gap-3 shrink-0">
                           <Toggle checked={r.enabled} onChange={() => toggleRecipient(platform.id, r.id)} />
                           <button
                             onClick={() => removeRecipient(platform.id, r.id)}
-                            className="text-black/30 hover:text-red-500 transition-colors cursor-pointer"
+                            className="text-black/85 hover:text-red-500 transition-colors cursor-pointer"
                           >
                             <IconTrash />
                           </button>
@@ -283,7 +320,7 @@ function Notifications() {
                         value={selectedCodes[platform.id] ?? "+1"}
                         onChange={(e) => setSelectedCodes((prev) => ({ ...prev, [platform.id]: e.target.value }))}
                         disabled={!platform.enabled}
-                        className="h-full pl-2 pr-6 py-2 text-sm text-[#052698] bg-[#FCFDFF] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                        className="h-full pl-2 pr-6 py-2 text-[16.6px] text-[#052698] bg-[#FCFDFF] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                         style={{ appearance: "auto" }}
                       >
                         {countryCodes.map((c, i) => (
@@ -303,25 +340,26 @@ function Notifications() {
                       onKeyDown={(e) => e.key === "Enter" && addRecipient(platform.id, platform.type)}
                       placeholder={placeholder[platform.type]}
                       disabled={!platform.enabled}
-                      className="flex-1 py-2.5 text-sm text-black placeholder-black/30 bg-transparent disabled:opacity-40"
+                      className="flex-1 py-2.5 text-[16.6px] text-black placeholder-black/30 bg-transparent disabled:opacity-40"
                     />
                   </div>
 
                   {/* Add button */}
                   <button
                     onClick={() => addRecipient(platform.id, platform.type)}
-                    disabled={!platform.enabled}
-                    className="bg-[#052698] text-white px-4 py-2.5 hover:bg-[#052698]/90 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5 text-sm shrink-0"
+                    disabled={!platform.enabled || saving === platform.id}
+                    className="bg-[#052698] text-white px-4 py-2.5 hover:bg-[#052698]/90 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5 text-[16.6px] shrink-0"
                   >
                     <IconPlus />
-                    <span>Add</span>
+                    <span>{saving === platform.id ? "Adding…" : "Add"}</span>
                   </button>
                 </div>
 
               </div>
             )}
           </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

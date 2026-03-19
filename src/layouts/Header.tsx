@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import logo from "../assets/tydline-sqaurlogo.png";
+const logo = "/tydline-sqaurlogo.png";
 
 function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -37,7 +37,7 @@ function Header() {
           <img src={logo} className="w-14" alt="Tydline Logo" />
         </Link>
         <Link to="/about">About Us</Link>
-        <Link to="/track?step=packages">Pricing</Link>
+        <Link to="/pricing">Pricing</Link>
       </div>
 
       {/* Mobile dropdown */}
@@ -47,7 +47,7 @@ function Header() {
             <Link to="/solutions" onClick={() => setMenuOpen(false)}>Solutions</Link>
             <Link to="/contact" onClick={() => setMenuOpen(false)}>Contact Us</Link>
             <Link to="/about" onClick={() => setMenuOpen(false)}>About Us</Link>
-            <Link to="/track?step=packages" onClick={() => setMenuOpen(false)}>Pricing</Link>
+            <Link to="/pricing" onClick={() => setMenuOpen(false)}>Pricing</Link>
           </nav>
         </div>
       )}
