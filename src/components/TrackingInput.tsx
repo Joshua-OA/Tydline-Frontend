@@ -32,7 +32,7 @@ function TrackingInput() {
           className="w-28 md:w-36 h-10 md:h-12 text-sm md:text-base"
           onClick={handleSearch}
         >
-          {query.trim() ? "Track" : "Get Started"}
+          Get started
         </Button>
       </div>
       <p className="text-xs text-[#545454]/60 self-start pl-0.5">

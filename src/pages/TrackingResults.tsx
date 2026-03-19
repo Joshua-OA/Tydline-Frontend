@@ -82,14 +82,15 @@ export default function TrackingResults() {
     navigate(`/track?q=${encodeURIComponent(query)}&step=${s}${extra}`);
   }
   const q = query.toUpperCase();
-  const shipment =
-    mockShipments.find(
-      (s) =>
-        s.id.includes(q) ||
-        s.vessel.includes(q) ||
-        s.origin.toUpperCase().includes(q) ||
-        s.destination.toUpperCase().includes(q)
-    ) ?? mockShipments[0];
+  const foundShipment = mockShipments.find(
+    (s) =>
+      s.id.includes(q) ||
+      s.vessel.includes(q) ||
+      s.origin.toUpperCase().includes(q) ||
+      s.destination.toUpperCase().includes(q)
+  );
+  const isUnknownBl = !foundShipment;
+  const shipment = foundShipment ?? mockShipments[0];
 
   const stepParam = params.get("step") as Step | null;
   const isRetry = stepParam === "auth" && params.get("retry") === "true";
@@ -101,6 +102,9 @@ export default function TrackingResults() {
   const [email, setEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [notifyEmail, setNotifyEmail] = useState("");
+  const [notifySubmitted, setNotifySubmitted] = useState(false);
+  const [notifyError, setNotifyError] = useState("");
 
   useEffect(() => {
     const t = setTimeout(() => setIsLoading(false), 2200);
@@ -157,6 +161,15 @@ export default function TrackingResults() {
     } finally {
       setSubmitting(false);
     }
+  }
+
+  function handleNotifySubmit() {
+    if (!notifyEmail.trim()) {
+      setNotifyError("Please enter your email address.");
+      return;
+    }
+    setNotifyError("");
+    setNotifySubmitted(true);
   }
 
   function backFromStep() {
@@ -216,8 +229,63 @@ export default function TrackingResults() {
               </div>
             )}
 
+            {/* ── NO MATCH — notify me ── */}
+            {step === "result" && !isLoading && isUnknownBl && (
+              <div className="w-full max-w-md flex flex-col gap-6">
+                <div>
+                  <p className="text-xs text-black/40 uppercase tracking-widest mb-1">Tracking</p>
+                  <h2 className="text-[#052698] text-2xl font-heading font-extrabold tracking-tight">{query}</h2>
+                </div>
+
+                {!notifySubmitted ? (
+                  <div className="border border-[#052698]/20 bg-[#FCFDFF] p-6 flex flex-col gap-5">
+                    <div className="flex flex-col gap-1.5">
+                      <h3 className="text-[#052698] font-heading font-bold text-base">We're on it</h3>
+                      <p className="text-sm text-black/65 leading-relaxed">
+                        We've queued <span className="text-[#052698] font-medium">{query}</span> for tracking. Since this
+                        is a new shipment, it may take a short while to pull the latest data. Enter your email and
+                        we'll notify you the moment it's ready.
+                      </p>
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-sm text-black">Your email</label>
+                      <input
+                        type="email"
+                        value={notifyEmail}
+                        onChange={(e) => { setNotifyEmail(e.target.value); setNotifyError(""); }}
+                        placeholder="you@company.com"
+                        className="border border-[#052698]/25 px-4 py-2.5 text-sm text-[#545454] bg-white outline-none w-full"
+                      />
+                      {notifyError && <p className="text-red-500 text-xs">{notifyError}</p>}
+                    </div>
+                    <button
+                      onClick={handleNotifySubmit}
+                      className="bg-[#052698] text-white text-sm font-medium px-6 py-3 hover:bg-[#052698]/90 transition-colors cursor-pointer"
+                    >
+                      Notify me →
+                    </button>
+                  </div>
+                ) : (
+                  <div className="border border-[#052698]/20 bg-[#FCFDFF] p-6 flex flex-col items-center gap-4 text-center">
+                    <div className="w-10 h-10 border border-[#052698]/20 flex items-center justify-center bg-white">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#052698" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <h3 className="text-[#052698] font-heading font-bold text-base">You're on the list</h3>
+                      <p className="text-sm text-black/65 leading-relaxed">
+                        We'll send tracking results for <span className="text-[#052698] font-medium">{query}</span> to{" "}
+                        <span className="text-[#052698] font-medium">{notifyEmail}</span> as soon as they're available.
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* ── RESULT ── */}
-            {step === "result" && !isLoading && (
+            {step === "result" && !isLoading && !isUnknownBl && (
               <div className="w-full max-w-3xl flex flex-col gap-6">
                 <div>
                   <p className="text-xs text-black/40 uppercase tracking-widest mb-1">Tracking result for</p>

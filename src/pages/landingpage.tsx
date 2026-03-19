@@ -5,10 +5,10 @@ const brickSvg = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/s
 
 function LandingPage() {
   return (
-    <div className="w-screen h-screen overflow-hidden md:overflow-hidden bg-[#F9E4D2] relative px-2 md:px-5">
+    <div className="w-screen min-h-screen bg-[#FFF9F5] lg:h-screen lg:overflow-hidden lg:bg-[#F9E4D2] lg:px-5">
       {/* Inner content area with lighter background + brick pattern */}
       <div
-        className="w-full h-full bg-[#FFF9F5] flex flex-col items-center overflow-y-auto md:overflow-hidden border-x-[0.5px] border-[#052698]/30"
+        className="w-full min-h-screen bg-[#FFF9F5] flex flex-col items-center border-x-[0.5px] border-[#052698]/30 lg:h-full lg:overflow-hidden"
         style={{ backgroundImage: brickSvg }}
       >
         <Header />
