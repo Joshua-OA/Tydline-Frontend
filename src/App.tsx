@@ -5,6 +5,9 @@ import TrackingResults from "./pages/TrackingResults";
 import AuthVerify from "./pages/AuthVerify";
 import Onboarding from "./pages/Onboarding";
 import Pricing from "./pages/Pricing";
+import Solutions from "./pages/Solutions";
+import About from "./pages/About";
+import Contact from "./pages/Contact";
 import Dashboard from "./pages/dashboard";
 
 function App() {
@@ -16,6 +19,9 @@ function App() {
         <Route path="/auth/verify" element={<AuthVerify />} />
         <Route path="/pricing" element={<Pricing />} />
         <Route path="/onboarding" element={<Onboarding />} />
+        <Route path="/solutions" element={<Solutions />} />
+        <Route path="/about" element={<About />} />
+        <Route path="/contact" element={<Contact />} />
         <Route path="/dashboard/*" element={<Dashboard />} />
       </Routes>
     </AppProvider>
