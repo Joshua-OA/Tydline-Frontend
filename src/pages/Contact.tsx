@@ -25,19 +25,19 @@ const channels = [
 
 export default function Contact() {
   return (
-    <div className="w-screen min-h-screen bg-[#F9E4D2] px-2 md:px-5">
+    <div className="w-screen min-h-screen bg-[#F9E4D2] px-4 md:px-16">
       <div
         className="w-full min-h-screen bg-[#FFF9F5] flex flex-col border-x-[0.5px] border-[#052698]/30"
         style={{ backgroundImage: brickSvg }}
       >
         <Header />
 
-        <div className="flex flex-col items-center px-4 py-14 gap-10 max-w-2xl mx-auto w-full">
+        <div className="flex flex-col items-center px-4 pt-8 pb-12 gap-6 max-w-xl mx-auto w-full scale-90 origin-top">
 
             {/* Hero */}
             <div className="text-center flex flex-col gap-3">
               <p className="text-xs font-medium tracking-widest text-[#052698]/50 uppercase">Contact us</p>
-              <h1 className="text-[#052698] text-3xl font-heading font-extrabold tracking-tight leading-snug">
+              <h1 className="text-[#052698] text-2xl font-heading font-extrabold tracking-tight leading-snug">
                 We're here to help
               </h1>
               <p className="text-[15px] text-black/80 max-w-sm mx-auto leading-relaxed">

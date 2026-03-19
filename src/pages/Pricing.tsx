@@ -88,19 +88,19 @@ export default function Pricing() {
   }
 
   return (
-    <div className="w-screen min-h-screen bg-[#F9E4D2] px-2 md:px-5">
+    <div className="w-screen min-h-screen bg-[#F9E4D2] px-4 md:px-16">
       <div
         className="w-full min-h-screen bg-[#FFF9F5] flex flex-col border-x-[0.5px] border-[#052698]/30"
         style={{ backgroundImage: brickSvg }}
       >
         <Header />
 
-        <div className="flex flex-col items-center px-4 py-10">
-            <div className="w-full max-w-5xl flex flex-col gap-8">
+        <div className="flex flex-col items-center px-4 pt-10 pb-14">
+            <div className="w-full max-w-3xl flex flex-col gap-6 mx-auto scale-90 origin-top">
 
               {/* Heading */}
               <div className="text-center">
-                <h1 className="text-[#052698] text-3xl font-heading font-extrabold tracking-tight">
+                <h1 className="text-[#052698] text-2xl font-heading font-extrabold tracking-tight">
                   Friendly prices carefully curated for you
                 </h1>
                 <p className="text-[15px] text-black/80 mt-2">Pick the coverage that fits your shipment volume.</p>

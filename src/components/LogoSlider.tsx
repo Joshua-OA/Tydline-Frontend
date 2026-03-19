@@ -92,11 +92,11 @@ function LogoSlider() {
       <div className="md:hidden overflow-hidden relative">
         <div className="pointer-events-none absolute inset-y-0 left-0 w-20 z-10 bg-gradient-to-r from-white to-transparent" />
         <div className="pointer-events-none absolute inset-y-0 right-0 w-20 z-10 bg-gradient-to-l from-white to-transparent" />
-        <div className="flex animate-marquee w-max" style={{ animationDuration: "80s" }}>
+        <div className="flex animate-marquee w-max" style={{ animationDuration: "50s" }}>
           {[...allLogos, ...allLogos].map((logo, i) => (
             <div
               key={`${logo.alt}-${i}`}
-              className="h-[50px] w-[70px] flex items-center justify-center p-2 shrink-0"
+              className="h-[50px] w-[110px] flex items-center justify-center px-4 shrink-0"
             >
               <img
                 src={logo.src}

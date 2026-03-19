@@ -12,9 +12,9 @@ import LogoSlider from "../components/LogoSlider";
 
 function CTA() {
   return (
-    <div className="w-full flex-1 flex flex-col items-center -mt-2 md:-mt-6">
+    <div className="w-full flex-1 flex flex-col items-center mt-2 md:mt-4">
       {/* Middle content — clustered together in center */}
-      <div className="flex-1 flex flex-col items-center justify-center w-full gap-5 md:gap-8 pb-4 md:pb-0">
+      <div className="flex-1 flex flex-col items-center justify-center w-full gap-5 md:gap-8 pb-4 md:pb-0 scale-90 origin-center">
         <HeadingSection />
         <HeroCard
           image={herocardimg}

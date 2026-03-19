@@ -6,7 +6,7 @@ function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
-    <div className="w-full flex items-center justify-center h-16 relative border-b border-[#052698]/25">
+    <div className="sticky top-0 z-50 w-full bg-[#FFF9F5] flex items-center justify-center h-16 relative border-b border-[#052698]/25">
       {/* Hamburger — mobile + tablet */}
       <button
         className="absolute left-4 lg:hidden flex flex-col justify-center gap-[5px] w-7 h-7 cursor-pointer"
@@ -54,32 +54,34 @@ function Header() {
       </div>
 
       {/* Mobile + tablet dropdown */}
-      {menuOpen && (
-        <div className="absolute top-full left-0 w-full bg-white border-b border-[#052698]/15 z-50 lg:hidden">
-          <nav className="flex flex-col items-center gap-0 divide-y divide-[#052698]/8 w-full">
-            <Link to="/solutions" onClick={() => setMenuOpen(false)} className="w-full text-center py-3 text-sm">Solutions</Link>
-            <Link to="/contact" onClick={() => setMenuOpen(false)} className="w-full text-center py-3 text-sm">Contact Us</Link>
-            <Link to="/about" onClick={() => setMenuOpen(false)} className="w-full text-center py-3 text-sm">About Us</Link>
-            <Link to="/pricing" onClick={() => setMenuOpen(false)} className="w-full text-center py-3 text-sm">Pricing</Link>
-            <div className="flex items-center justify-center gap-3 py-4 px-4 w-full">
-              <Link
-                to="/track?step=auth"
-                onClick={() => setMenuOpen(false)}
-                className="flex-1 text-center text-sm text-[#052698] font-medium py-2.5 border border-[#052698]/30 hover:bg-[#052698]/5 transition-colors"
-              >
-                Login
-              </Link>
-              <Link
-                to="/pricing"
-                onClick={() => setMenuOpen(false)}
-                className="flex-1 text-center text-sm text-white font-medium py-2.5 bg-[#052698] hover:bg-[#052698]/90 transition-colors"
-              >
-                Get started
-              </Link>
-            </div>
-          </nav>
-        </div>
-      )}
+      <div
+        className={`absolute top-full left-0 w-full bg-[#FFF9F5] border-b border-[#052698]/15 z-50 lg:hidden overflow-hidden transition-all duration-300 ease-in-out ${
+          menuOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+        }`}
+      >
+        <nav className="flex flex-col items-center gap-0 divide-y divide-[#052698]/8 w-full">
+          <Link to="/solutions" onClick={() => setMenuOpen(false)} className="w-full text-center py-3 text-sm">Solutions</Link>
+          <Link to="/contact" onClick={() => setMenuOpen(false)} className="w-full text-center py-3 text-sm">Contact Us</Link>
+          <Link to="/about" onClick={() => setMenuOpen(false)} className="w-full text-center py-3 text-sm">About Us</Link>
+          <Link to="/pricing" onClick={() => setMenuOpen(false)} className="w-full text-center py-3 text-sm">Pricing</Link>
+          <div className="flex items-center justify-center gap-3 py-4 px-4 w-full">
+            <Link
+              to="/track?step=auth"
+              onClick={() => setMenuOpen(false)}
+              className="flex-1 text-center text-sm text-[#052698] font-medium py-2.5 border border-[#052698]/30 hover:bg-[#052698]/5 transition-colors"
+            >
+              Login
+            </Link>
+            <Link
+              to="/pricing"
+              onClick={() => setMenuOpen(false)}
+              className="flex-1 text-center text-sm text-white font-medium py-2.5 bg-[#052698] hover:bg-[#052698]/90 transition-colors"
+            >
+              Get started
+            </Link>
+          </div>
+        </nav>
+      </div>
     </div>
   );
 }

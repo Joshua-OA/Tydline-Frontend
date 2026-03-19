@@ -1,5 +1,3 @@
-import tydlineLogo from "../assets/tydline-sqaurlogo.png";
-
 interface Article {
   iconLeft: string;
   iconRight: string;
@@ -39,16 +37,8 @@ function HeroCard({ image, articles }: HeroCardProps) {
             >
               {/* Icons */}
               <div className="flex items-center gap-1.5 shrink-0">
-                <img
-                  src={article.iconLeft}
-                  alt=""
-                  className="w-8 h-8 shrink-0"
-                />
-                <img
-                  src={article.iconRight}
-                  alt=""
-                  className="w-8 h-8 shrink-0"
-                />
+                <img src={article.iconLeft} alt="" className="w-8 h-8 shrink-0" />
+                <img src={article.iconRight} alt="" className="w-8 h-8 shrink-0" />
               </div>
 
               {/* Colon separator */}
@@ -58,15 +48,6 @@ function HeroCard({ image, articles }: HeroCardProps) {
               <p className="text-[#545454] font-medium h-full flex items-center leading-none truncate">
                 {article.description}
               </p>
-
-              {/* Logo on last article */}
-              {index === articles.length - 1 && (
-                <img
-                  src={tydlineLogo}
-                  alt="Tydline"
-                  className="absolute right-3 bottom-2 h-6 opacity-80"
-                />
-              )}
             </article>
           ))}
         </div>
