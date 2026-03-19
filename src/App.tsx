@@ -9,6 +9,7 @@ import Solutions from "./pages/Solutions";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import Dashboard from "./pages/dashboard";
+import PitchDeck from "./pages/PitchDeck";
 
 function App() {
   return (
@@ -23,6 +24,7 @@ function App() {
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/dashboard/*" element={<Dashboard />} />
+        <Route path="/pitch" element={<PitchDeck />} />
       </Routes>
     </AppProvider>
   );
