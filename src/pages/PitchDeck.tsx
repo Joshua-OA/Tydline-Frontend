@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import type { ReactNode } from "react";
-import html2canvas from "html2canvas";
+import { toPng } from "html-to-image";
 import PptxGenJS from "pptxgenjs";
 
 const BLUE = "#052698";
@@ -1212,60 +1212,50 @@ export default function PitchDeck() {
   const prev = useCallback(() => setCurrent((c) => Math.max(0, c - 1)), []);
   const next = useCallback(() => setCurrent((c) => Math.min(total - 1, c + 1)), [total]);
 
+
+
+  async function captureSlide(el: HTMLElement): Promise<string> {
+    return toPng(el, {
+      pixelRatio: 2,
+      backgroundColor: "#FFF9F5",
+      skipFonts: false,
+    });
+  }
+
   async function handleExportPptx() {
     if (!slideContentRef.current) return;
     setExporting(true);
     setExportProgress(0);
 
     const pptx = new PptxGenJS();
-    pptx.layout = "LAYOUT_WIDE"; // 13.33 x 7.5 inches (16:9)
+    pptx.layout = "LAYOUT_WIDE";
     pptx.title = "Tydline — Investor Pitch 2026";
     pptx.author = "Tydline";
 
     const savedSlide = current;
 
     for (let i = 0; i < total; i++) {
-      // navigate to slide
       setCurrent(i);
       setExportProgress(Math.round((i / total) * 100));
-
-      // wait for render
-      await new Promise((r) => setTimeout(r, 350));
+      await new Promise((r) => setTimeout(r, 400));
 
       const el = slideContentRef.current;
       if (!el) continue;
 
-      const canvas = await html2canvas(el, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: "#FFF9F5",
-        logging: false,
-      });
-
-      const imgData = canvas.toDataURL("image/png");
+      const imgData = await captureSlide(el);
 
       const slide = pptx.addSlide();
       slide.background = { color: "FFF9F5" };
-
-      // full-bleed image
-      slide.addImage({
-        data: imgData,
-        x: 0, y: 0,
-        w: "100%", h: "100%",
-      });
-
-      // slide number
+      slide.addImage({ data: imgData, x: 0, y: 0, w: "100%", h: "100%" });
       slide.addText(`${i + 1} / ${total}`, {
         x: 12.8, y: 7.2, w: 0.5, h: 0.25,
         fontSize: 7, color: "99aabb", align: "right",
       });
     }
 
-    // restore original slide
     setCurrent(savedSlide);
     setExporting(false);
     setExportProgress(0);
-
     pptx.writeFile({ fileName: "Tydline-PitchDeck-2026.pptx" });
   }
 
