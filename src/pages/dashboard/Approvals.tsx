@@ -59,17 +59,36 @@ function Approvals() {
             <div key={item.id} className="bg-[#FCFDFF] border border-[#052698]/20 p-5">
               <div className="flex flex-col md:flex-row md:items-start gap-4">
                 <div className="flex-1 min-w-0">
+                  {/* B/L number — primary identifier */}
                   <div className="flex items-center gap-3 flex-wrap mb-1">
-                    <span className="text-[#052698] font-medium text-[16.6px]">{item.container_id}</span>
+                    <span className="text-[#052698] font-medium text-[16.6px]">{item.bill_of_lading}</span>
                     <span className="text-[14.6px] px-2 py-0.5 bg-amber-50 text-amber-700 border border-amber-200">
                       Pending Approval
                     </span>
                   </div>
-                  <p className="text-[16.6px] text-black/80 mb-1">
-                    {item.vessel && <>{item.vessel} · </>}
-                    {item.origin} → {item.destination}
+
+                  {/* Container number — secondary */}
+                  <p className="text-[14.6px] text-black/80 mb-1">
+                    Container: <span className="font-medium text-black">{item.container_number}</span>
+                    {item.carrier && <> · {item.carrier}</>}
                   </p>
-                  <p className="text-[14.6px] text-black/80">Submitted {item.submitted_at}</p>
+
+                  {/* ETA / dates */}
+                  <p className="text-[14.6px] text-black/80">
+                    {item.eta
+                      ? <>ETA {item.eta}</>
+                      : item.predicted_eta
+                      ? <>Predicted ETA {item.predicted_eta}</>
+                      : <>Submitted {new Date(item.created_at).toLocaleDateString()}</>
+                    }
+                    {item.free_days_remaining != null && (
+                      <> · {item.free_days_remaining} free days remaining</>
+                    )}
+                  </p>
+
+                  {item.demurrage_risk && (
+                    <p className="text-[13px] text-red-600 mt-1">Demurrage risk: {item.demurrage_risk}</p>
+                  )}
                 </div>
 
                 <div className="flex gap-2 shrink-0">

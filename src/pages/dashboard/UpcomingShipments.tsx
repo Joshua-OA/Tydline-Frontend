@@ -80,7 +80,7 @@ function TrackingEmailBanner({ email, hasWhatsApp }: { email: string; hasWhatsAp
 }
 
 function UpcomingShipments() {
-  const { trackingEmail, selectedPackage } = useApp();
+  const { trackingEmail } = useApp();
   const [plan, setPlan] = useState<string | null>(null);
   const hasWhatsApp = plan === null || plan === "growth" || plan === "pro" || plan === "custom";
 

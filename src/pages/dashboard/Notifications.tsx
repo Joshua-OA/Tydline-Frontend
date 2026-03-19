@@ -140,7 +140,7 @@ const EMPTY_PLATFORMS: Platform[] = [
 ];
 
 function Notifications() {
-  const { selectedPackage } = useApp();
+  useApp();
   const [plan, setPlan] = useState<string | null>(null);
   const hasWhatsApp = plan === null || plan === "growth" || plan === "pro" || plan === "custom";
 

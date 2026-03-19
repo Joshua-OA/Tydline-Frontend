@@ -30,7 +30,7 @@ const COUNTRY_CODES = [
 export default function Onboarding() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { selectedPackage, setSubscriptionActive, setTrackingEmail, userId } = useApp();
+  const { selectedPackage, setSubscriptionActive, setTrackingEmail } = useApp();
 
   const stepParam = searchParams.get("step") as Step | null;
   const step: Step = (["payment", "otp", "tracking-email", "success"].includes(stepParam ?? "") ? stepParam! : "payment");

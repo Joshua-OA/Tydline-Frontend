@@ -26,6 +26,8 @@ async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
 
 export type Shipment = {
   id: string;
+  bill_of_lading?: string;
+  container_number?: string;
   vessel: string;
   line: string;
   origin: string;
@@ -47,12 +49,17 @@ export type ShipmentsResponse = {
 
 export type ApiApproval = {
   id: string;
-  container_id: string;
-  vessel: string;
-  origin: string;
-  destination: string;
-  submitted_at: string;
+  container_number: string;
+  bill_of_lading: string;
+  carrier: string | null;
   status: string;
+  eta: string | null;
+  predicted_eta: string | null;
+  demurrage_risk: string | null;
+  free_days_remaining: number | null;
+  last_updated: string;
+  created_at: string;
+  user_id: string;
 };
 
 export type NotifyParty = {
@@ -103,7 +110,7 @@ export const api = {
     ),
 
   getWhatsAppPhone: () =>
-    apiFetch<{ phone: string | null }>("/onboarding/whatsapp-phone"),
+    apiFetch<{ phones: string[] }>("/onboarding/whatsapp-phone"),
 
   setWhatsAppPhone: (phone: string) =>
     apiFetch<{ user_id: string; phone: string }>("/onboarding/whatsapp-phone", {

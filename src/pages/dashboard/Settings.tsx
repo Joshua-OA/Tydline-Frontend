@@ -58,15 +58,42 @@ const planColor: Record<string, string> = {
   custom: "bg-green-50 text-green-700 border-green-200",
 };
 
+const WA_CODES = [
+  { code: "+233", label: "GH +233" },
+  { code: "+1",   label: "US +1" },
+  { code: "+44",  label: "GB +44" },
+  { code: "+234", label: "NG +234" },
+  { code: "+254", label: "KE +254" },
+  { code: "+27",  label: "ZA +27" },
+  { code: "+49",  label: "DE +49" },
+  { code: "+33",  label: "FR +33" },
+  { code: "+31",  label: "NL +31" },
+  { code: "+91",  label: "IN +91" },
+  { code: "+86",  label: "CN +86" },
+  { code: "+65",  label: "SG +65" },
+  { code: "+971", label: "AE +971" },
+  { code: "+55",  label: "BR +55" },
+  { code: "+61",  label: "AU +61" },
+];
+
 type PlanInfo = {
   plan: string;
   status: string;
 };
 
-function Settings({ waPhoneSet }: { waPhoneSet?: boolean | null }) {
+function Settings({ waPhoneSet, onWaPhoneUpdated }: { waPhoneSet?: boolean | null; onWaPhoneUpdated?: () => void }) {
   const { selectedPackage, trackingEmail } = useApp();
   const [planInfo, setPlanInfo] = useState<PlanInfo | null>(null);
   const [planLoading, setPlanLoading] = useState(true);
+
+  // WhatsApp quick-edit state
+  const [waPhone, setWaPhone] = useState<string | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [editCode, setEditCode] = useState("+233");
+  const [editNumber, setEditNumber] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   useEffect(() => {
     api.getPlan()
@@ -75,9 +102,50 @@ function Settings({ waPhoneSet }: { waPhoneSet?: boolean | null }) {
       .finally(() => setPlanLoading(false));
   }, []);
 
+  useEffect(() => {
+    api.getWhatsAppPhone()
+      .then((res) => {
+        console.log("[Settings] getWhatsAppPhone response:", res);
+        const first = Array.isArray(res.phones) && res.phones.length > 0 ? res.phones[0] : null;
+        setWaPhone(first);
+      })
+      .catch((e) => console.warn("[Settings] getWhatsAppPhone error:", e));
+  }, []);
+
   const plan = planInfo?.plan ?? selectedPackage?.plan ?? "starter";
   const planDisplay = planLabel[plan] ?? plan;
   const hasWhatsApp = plan === "growth" || plan === "pro" || plan === "custom";
+
+  // Derive connected state: prop or local fetch
+  const phoneConnected = waPhone !== null || waPhoneSet === true;
+
+  function startEdit() {
+    setSaveError(null);
+    setSaveSuccess(false);
+    setEditNumber("");
+    setEditing(true);
+  }
+
+  async function handleSavePhone() {
+    const raw = editNumber.trim();
+    if (!raw) return;
+    const digits = `${editCode}${raw}`.replace(/\D/g, "");
+    setSaving(true);
+    setSaveError(null);
+    try {
+      const result = await api.setWhatsAppPhone(digits);
+      console.log("[Settings] setWhatsAppPhone response:", result);
+      setWaPhone(`${editCode} ${raw}`);
+      setSaveSuccess(true);
+      setEditing(false);
+      onWaPhoneUpdated?.();
+      setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (e) {
+      setSaveError((e as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  }
 
   return (
     <div className="p-6 md:p-8 flex flex-col gap-8">
@@ -181,39 +249,78 @@ function Settings({ waPhoneSet }: { waPhoneSet?: boolean | null }) {
           </div>
 
           {/* WhatsApp — Growth / Pro / Custom only */}
-          <div className={`flex items-center justify-between border border-[#052698]/12 p-3 ${!hasWhatsApp ? "opacity-60" : ""}`}>
-            <div>
-              <div className="flex items-center gap-2">
-                <p className="text-[16.6px] text-black font-medium">WhatsApp Business</p>
-                {!hasWhatsApp && (
-                  <span className="text-[12.6px] px-1.5 py-0.5 bg-amber-50 text-amber-700 border border-amber-200">Growth plan</span>
+          <div className={`flex flex-col border border-[#052698]/12 p-3 gap-3 ${!hasWhatsApp ? "opacity-60" : ""}`}>
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="flex items-center gap-2">
+                  <p className="text-[16.6px] text-black font-medium">WhatsApp Business</p>
+                  {!hasWhatsApp && (
+                    <span className="text-[12.6px] px-1.5 py-0.5 bg-amber-50 text-amber-700 border border-amber-200">Growth plan</span>
+                  )}
+                </div>
+                {hasWhatsApp ? (
+                  phoneConnected ? (
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-[14.6px] px-2 py-0.5 border text-green-600 border-green-200 bg-green-50 inline-block">Connected</span>
+                      {waPhone && <span className="text-[14.6px] text-[#052698] font-medium">{waPhone}</span>}
+                      {saveSuccess && <span className="text-[13px] text-green-600">Saved!</span>}
+                    </div>
+                  ) : (
+                    <span className="text-[14.6px] px-2 py-0.5 border text-amber-700 border-amber-200 bg-amber-50 mt-1 inline-block">Disconnected — setup pending</span>
+                  )
+                ) : (
+                  <span className="text-[14.6px] px-2 py-0.5 border text-black/80 border-black/10 bg-transparent mt-1 inline-block">Not available on Starter</span>
                 )}
               </div>
+
               {hasWhatsApp ? (
-                waPhoneSet === false ? (
-                  <span className="text-[14.6px] px-2 py-0.5 border text-amber-700 border-amber-200 bg-amber-50 mt-1 inline-block">Disconnected — setup pending</span>
-                ) : (
-                  <span className="text-[14.6px] px-2 py-0.5 border text-green-600 border-green-200 bg-green-50 mt-1 inline-block">Connected</span>
-                )
+                <button
+                  onClick={editing ? () => setEditing(false) : startEdit}
+                  className="border border-[#052698]/25 text-[#052698] text-[14.6px] px-3 py-1.5 hover:bg-[#052698]/5 transition-colors cursor-pointer shrink-0"
+                >
+                  {editing ? "Cancel" : phoneConnected ? "Change number" : "Set up"}
+                </button>
               ) : (
-                <span className="text-[14.6px] px-2 py-0.5 border text-black/80 border-black/10 bg-transparent mt-1 inline-block">Not available on Starter</span>
+                <button
+                  disabled
+                  className="border border-[#052698]/15 text-[#052698]/40 text-[16.6px] px-3 py-1.5 cursor-not-allowed"
+                >
+                  Upgrade to unlock
+                </button>
               )}
             </div>
-            {hasWhatsApp ? (
-              waPhoneSet === false ? (
-                <span className="text-[14.6px] text-amber-700 italic">Pending setup</span>
-              ) : (
-                <button className="border border-[#052698]/25 text-[#052698] text-[16.6px] px-3 py-1.5 hover:bg-[#052698]/5 transition-colors cursor-pointer">
-                  Disconnect
-                </button>
-              )
-            ) : (
-              <button
-                disabled
-                className="border border-[#052698]/15 text-[#052698]/40 text-[16.6px] px-3 py-1.5 cursor-not-allowed"
-              >
-                Upgrade to unlock
-              </button>
+
+            {/* Inline phone editor */}
+            {editing && hasWhatsApp && (
+              <div className="flex flex-col gap-2 pt-2 border-t border-[#052698]/10">
+                <p className="text-[14.6px] text-black/85">Enter your WhatsApp number</p>
+                <div className="flex gap-2">
+                  <select
+                    value={editCode}
+                    onChange={(e) => setEditCode(e.target.value)}
+                    className="border border-[#052698]/25 bg-[#FCFDFF] px-2 py-2 text-[14.6px] text-black cursor-pointer focus:border-[#052698]/50 transition-colors"
+                  >
+                    {WA_CODES.map(({ code, label }) => (
+                      <option key={code} value={code}>{label}</option>
+                    ))}
+                  </select>
+                  <input
+                    type="tel"
+                    value={editNumber}
+                    onChange={(e) => setEditNumber(e.target.value)}
+                    placeholder="59 864 3872"
+                    className="flex-1 border border-[#052698]/25 bg-[#FCFDFF] px-3 py-2 text-[14.6px] text-black placeholder-[#545454]/30 focus:border-[#052698]/50 transition-colors"
+                  />
+                  <button
+                    onClick={handleSavePhone}
+                    disabled={saving || !editNumber.trim()}
+                    className="bg-green-600 text-white text-[14.6px] px-4 py-2 hover:bg-green-700 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+                  >
+                    {saving ? "Saving…" : "Save"}
+                  </button>
+                </div>
+                {saveError && <p className="text-[13px] text-red-600">{saveError}</p>}
+              </div>
             )}
           </div>
 

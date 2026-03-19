@@ -284,29 +284,47 @@ function Dashboard() {
   );
 
   useEffect(() => {
+    console.log("[WA] Starting WhatsApp setup check…");
     api.getPlan().then((planData) => {
       const plan = planData?.plan ?? selectedPackage?.plan ?? "starter";
       const eligible = plan === "growth" || plan === "pro" || plan === "custom";
+      console.log(`[WA] Plan: "${plan}" | eligible for WhatsApp: ${eligible}`);
       setHasWaPlan(eligible);
-      if (!eligible) return;
+      if (!eligible) {
+        console.log("[WA] Plan not eligible — skipping phone check");
+        return;
+      }
 
       api.getWhatsAppPhone().then((res) => {
-        const isSet = !!res.phone;
+        console.log("[WA] getWhatsAppPhone raw response:", JSON.stringify(res));
+        const isSet = Array.isArray(res.phones) && res.phones.length > 0;
+        console.log(`[WA] phones: ${JSON.stringify(res.phones)} | isSet: ${isSet}`);
         setWaPhoneSet(isSet);
-        if (!isSet && !localStorage.getItem("tydline_wa_prompt_dismissed")) {
+        const dismissed = localStorage.getItem("tydline_wa_prompt_dismissed");
+        console.log(`[WA] prompt dismissed in localStorage: ${dismissed}`);
+        if (!isSet && !dismissed) {
+          console.log("[WA] Showing setup modal");
           setShowWaModal(true);
+        } else {
+          console.log(`[WA] Not showing modal — isSet: ${isSet}, dismissed: ${!!dismissed}`);
         }
-      }).catch(() => {});
-    }).catch(() => {});
+      }).catch((e) => {
+        console.warn("[WA] getWhatsAppPhone failed:", e);
+        setWaPhoneSet(true);
+      });
+    }).catch((e) => console.warn("[WA] getPlan failed:", e));
   }, []);
 
   function handleWaModalDone() {
     setShowWaModal(false);
-    // Re-check so banner + settings update immediately
-    api.getWhatsAppPhone().then((res) => setWaPhoneSet(!!res.phone)).catch(() => {});
+    api.getWhatsAppPhone().then((res) => {
+      console.log("[WA] post-modal re-check:", JSON.stringify(res));
+      setWaPhoneSet(Array.isArray(res.phones) && res.phones.length > 0);
+    }).catch(() => {});
   }
 
   const showWaBanner = hasWaPlan && waPhoneSet === false && !toastDismissed;
+  console.log(`[WA] Banner state — hasWaPlan: ${hasWaPlan}, waPhoneSet: ${waPhoneSet}, toastDismissed: ${toastDismissed}, showBanner: ${showWaBanner}`);
 
   async function handleLogout() {
     try { await api.logout(); } catch { /* best effort */ }
@@ -415,7 +433,7 @@ function Dashboard() {
               <Route path="shipments" element={<UpcomingShipments />} />
               <Route path="approvals" element={<Approvals />} />
               <Route path="notifications" element={<Notifications />} />
-              <Route path="settings" element={<Settings waPhoneSet={waPhoneSet} />} />
+              <Route path="settings" element={<Settings waPhoneSet={waPhoneSet} onWaPhoneUpdated={() => setWaPhoneSet(true)} />} />
             </Routes>
           </div>
         </main>

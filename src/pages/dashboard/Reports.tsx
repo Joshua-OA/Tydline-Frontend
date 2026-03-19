@@ -176,7 +176,7 @@ const FILTERS: { key: FilterKey; label: string }[] = [
 // ── Reports page ───────────────────────────────────────────────────────────────
 
 function Reports() {
-  const { trackingEmail, selectedPackage } = useApp();
+  const { trackingEmail } = useApp();
   const [plan, setPlan] = useState<string | null>(null);
   const hasWhatsApp = plan === null || plan === "growth" || plan === "pro" || plan === "custom";
 
@@ -329,8 +329,8 @@ function Reports() {
             <table className="w-full text-[16.6px]">
               <thead>
                 <tr className="border-b border-[#052698]/10">
-                  <th className="text-left px-5 py-3 text-[14.6px] text-black/85 font-body font-normal uppercase tracking-wider">Container ID</th>
-                  <th className="text-left px-5 py-3 text-[14.6px] text-black/85 font-body font-normal uppercase tracking-wider">Vessel</th>
+                  <th className="text-left px-5 py-3 text-[14.6px] text-black/85 font-body font-normal uppercase tracking-wider">Bill of Lading</th>
+                  <th className="text-left px-5 py-3 text-[14.6px] text-black/85 font-body font-normal uppercase tracking-wider hidden md:table-cell">Vessel</th>
                   <th className="text-left px-5 py-3 text-[14.6px] text-black/85 font-body font-normal uppercase tracking-wider hidden md:table-cell">Route</th>
                   <th className="text-left px-5 py-3 text-[14.6px] text-black/85 font-body font-normal uppercase tracking-wider">ETA</th>
                   <th className="text-left px-5 py-3 text-[14.6px] text-black/85 font-body font-normal uppercase tracking-wider">Status</th>
@@ -341,8 +341,13 @@ function Reports() {
                   const label = displayStatus(row.status);
                   return (
                     <tr key={row.id} className="hover:bg-[#052698]/3 transition-colors">
-                      <td className="px-5 py-3.5 text-[#052698] font-medium text-[16.6px]">{row.id}</td>
-                      <td className="px-5 py-3.5 text-black text-[16.6px]">{row.vessel}</td>
+                      <td className="px-5 py-3.5">
+                        <p className="text-[#052698] font-medium text-[16.6px]">{row.bill_of_lading ?? row.id}</p>
+                        {row.container_number && (
+                          <p className="text-[13px] text-black/70 mt-0.5">{row.container_number}</p>
+                        )}
+                      </td>
+                      <td className="px-5 py-3.5 text-black text-[16.6px] hidden md:table-cell">{row.vessel}</td>
                       <td className="px-5 py-3.5 text-black/85 text-[16.6px] hidden md:table-cell">{row.origin} → {row.destination}</td>
                       <td className="px-5 py-3.5 text-black text-[16.6px]">{row.eta}</td>
                       <td className="px-5 py-3.5">
