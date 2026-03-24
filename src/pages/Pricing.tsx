@@ -56,7 +56,7 @@ function ChannelBadge({ icon, label }: { icon: React.ReactNode; label: string })
 
 export default function Pricing() {
   const navigate = useNavigate();
-  const { setSelectedPackage } = useApp();
+  const { setSelectedPackage, userId } = useApp();
 
   const [starterChannel, setStarterChannel] = useState<"email" | "whatsapp" | null>(null);
   const [channelError, setChannelError] = useState("");
@@ -64,7 +64,8 @@ export default function Pricing() {
 
   function selectPlan(pkg: SelectedPackage) {
     setSelectedPackage(pkg);
-    navigate("/track?step=auth");
+    // If already authenticated (existing user with no subscription), go straight to payment
+    navigate(userId ? "/onboarding" : "/track?step=auth");
   }
 
   function handleStarterSelect() {

@@ -9,10 +9,10 @@ export interface SelectedPackage {
 
 interface AppState {
   userId: string | null;
-  subscriptionStatus: "pending" | "active" | null;
+  subscriptionStatus: "pending" | "active" | "none" | null;
   trackingEmail: string | null;
   selectedPackage: SelectedPackage | null;
-  setUser: (userId: string, status: "pending" | "active") => void;
+  setUser: (userId: string, status: "pending" | "active" | "none") => void;
   setSubscriptionActive: () => void;
   setTrackingEmail: (email: string) => void;
   setSelectedPackage: (pkg: SelectedPackage) => void;
@@ -23,8 +23,8 @@ const AppContext = createContext<AppState | null>(null);
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [userId, setUserId] = useState<string | null>(() => localStorage.getItem("tydline_user_id"));
-  const [subscriptionStatus, setSubStatus] = useState<"pending" | "active" | null>(
-    () => localStorage.getItem("tydline_sub_status") as "pending" | "active" | null
+  const [subscriptionStatus, setSubStatus] = useState<"pending" | "active" | "none" | null>(
+    () => localStorage.getItem("tydline_sub_status") as "pending" | "active" | "none" | null
   );
   const [trackingEmail, setTrackingEmailState] = useState<string | null>(
     () => localStorage.getItem("tydline_tracking_email")
@@ -34,7 +34,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return stored ? (JSON.parse(stored) as SelectedPackage) : null;
   });
 
-  const setUser = (id: string, status: "pending" | "active") => {
+  const setUser = (id: string, status: "pending" | "active" | "none") => {
     setUserId(id);
     setSubStatus(status);
     localStorage.setItem("tydline_user_id", id);

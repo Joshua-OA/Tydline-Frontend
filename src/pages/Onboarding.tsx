@@ -30,7 +30,7 @@ const COUNTRY_CODES = [
 export default function Onboarding() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { selectedPackage, setSubscriptionActive, setTrackingEmail } = useApp();
+  const { selectedPackage, setSubscriptionActive, setTrackingEmail, subscriptionStatus } = useApp();
 
   const stepParam = searchParams.get("step") as Step | null;
   const step: Step = (["payment", "otp", "tracking-email", "success"].includes(stepParam ?? "") ? stepParam! : "payment");
@@ -47,6 +47,14 @@ export default function Onboarding() {
     pendingNav.current = destination;
     setShowLeaveModal(true);
   }
+
+  // Guard: tracking-email step requires an active subscription
+  useEffect(() => {
+    if (step === "tracking-email" && subscriptionStatus !== "active") {
+      goToStep("payment");
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, subscriptionStatus]);
 
   // Intercept browser back/forward button
   useEffect(() => {
@@ -67,10 +75,44 @@ export default function Onboarding() {
   const [payLoading, setPayLoading] = useState(false);
   const [payError, setPayError] = useState("");
 
+  // Coupon
+  const [coupon, setCoupon] = useState("");
+  const [couponLoading, setCouponLoading] = useState(false);
+  const [couponError, setCouponError] = useState("");
+
+  async function handleApplyCoupon() {
+    const code = coupon.trim().toUpperCase();
+    if (!code) return;
+    setCouponError("");
+    setCouponLoading(true);
+    try {
+      await api.applyCoupon(code);
+      setSubscriptionActive();
+      goToStep("tracking-email");
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "";
+      setCouponError(
+        msg.toLowerCase().includes("expired") || msg.toLowerCase().includes("limit")
+          ? "This code has expired or reached its usage limit."
+          : "Invalid or inactive coupon code."
+      );
+    } finally {
+      setCouponLoading(false);
+    }
+  }
+
   // OTP step
   const [otp, setOtp] = useState("");
   const [otpLoading, setOtpLoading] = useState(false);
   const [otpError, setOtpError] = useState("");
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const t = setTimeout(() => setResendCooldown((c) => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [resendCooldown]);
 
   // Tracking email step — user types prefix only; suffix is fixed
   const TRACKING_SUFFIX = "@track.tydline.com";
@@ -123,11 +165,34 @@ export default function Onboarding() {
         ? (planKey as "starter" | "growth" | "pro")
         : "starter";
       await api.initiatePayment(fullNumber, apiPlan);
+      setResendCooldown(30);
       goToStep("otp");
     } catch (e) {
       setPayError(e instanceof Error ? e.message : "Payment initiation failed.");
     } finally {
       setPayLoading(false);
+    }
+  }
+
+  async function handleResendOTP() {
+    const digits = phone.trim().replace(/^0/, "");
+    if (!digits || digits.length < 7) return;
+    const dialCode = countryCode.replace("+", "");
+    const fullNumber = `${dialCode}${digits}`;
+    setResendLoading(true);
+    setOtpError("");
+    try {
+      const planKey = selectedPackage?.plan ?? "starter";
+      const apiPlan = (["starter", "growth", "pro"] as const).includes(planKey as "starter" | "growth" | "pro")
+        ? (planKey as "starter" | "growth" | "pro")
+        : "starter";
+      await api.initiatePayment(fullNumber, apiPlan);
+      setOtp("");
+      setResendCooldown(30);
+    } catch (e) {
+      setOtpError(e instanceof Error ? e.message : "Failed to resend OTP. Please try again.");
+    } finally {
+      setResendLoading(false);
     }
   }
 
@@ -156,6 +221,12 @@ export default function Onboarding() {
       setTEmailError("Use only letters, numbers, dots, or hyphens — e.g. yourcompany");
       return;
     }
+    if (prefixAvailability === "idle") {
+      // Availability hasn't been checked yet — trigger it and wait for the result to show
+      checkPrefixAvailability();
+      return;
+    }
+    if (prefixAvailability === "checking") return;
     if (prefixAvailability === "taken") {
       setTEmailError("This address is already taken. Please choose a different one.");
       return;
@@ -208,12 +279,12 @@ export default function Onboarding() {
           {!selectedPackage && step === "payment" && (
             <div className="w-full max-w-md border border-[#052698]/15 bg-[#FCFDFF] p-5 mb-6 flex flex-col gap-3">
               <p className="text-[15px] text-black font-medium">No plan selected</p>
-              <p className="text-[13.5px] text-black/60">It looks like your plan selection was lost. Please go back and choose a plan to continue.</p>
+              <p className="text-[13.5px] text-black/60">It looks like your plan selection was lost. Please choose a plan to continue.</p>
               <button
-                onClick={() => navigate(-1)}
+                onClick={() => navigate("/pricing")}
                 className="text-[13.5px] text-[#052698] underline text-left cursor-pointer"
               >
-                ← Go back and select a plan
+                ← Choose a plan
               </button>
             </div>
           )}
@@ -305,6 +376,35 @@ export default function Onboarding() {
                   >
                     {payLoading ? "Processing…" : `Pay GHS ${selectedPackage?.amount ?? "—"} →`}
                   </button>
+
+                  {/* Coupon — alternative to MoMo */}
+                  <div className="flex items-center gap-3">
+                    <div className="h-px flex-1 bg-[#052698]/10" />
+                    <span className="text-[13px] text-black/40 uppercase tracking-widest">or</span>
+                    <div className="h-px flex-1 bg-[#052698]/10" />
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[13.5px] text-black/60 uppercase tracking-widest">Coupon code</label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={coupon}
+                        onChange={(e) => { setCoupon(e.target.value.toUpperCase()); setCouponError(""); }}
+                        placeholder="EARLYBIRD"
+                        disabled={couponLoading}
+                        className="flex-1 border-[0.45px] border-[#052698]/40 px-4 py-2.5 text-black bg-white text-[15.5px] tracking-widest uppercase focus:outline-none focus:border-[#052698] disabled:opacity-50"
+                      />
+                      <button
+                        onClick={handleApplyCoupon}
+                        disabled={couponLoading || !coupon.trim()}
+                        className="bg-white border border-[#052698]/30 text-[#052698] text-[15.5px] font-medium px-5 py-2.5 hover:bg-[#052698]/5 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap"
+                      >
+                        {couponLoading ? "Applying…" : "Apply"}
+                      </button>
+                    </div>
+                    {couponError && <p className="text-red-500 text-[14px]">{couponError}</p>}
+                  </div>
                 </div>
               )}
 
@@ -341,12 +441,21 @@ export default function Onboarding() {
                     {otpLoading ? "Confirming…" : "Confirm payment →"}
                   </button>
 
-                  <button
-                    onClick={() => navigate(-1)}
-                    className="text-[15.5px] text-black/50 hover:text-black transition-colors cursor-pointer text-left"
-                  >
-                    ← Use a different number
-                  </button>
+                  <div className="flex items-center justify-between">
+                    <button
+                      onClick={() => goToStep("payment")}
+                      className="text-[15.5px] text-black/50 hover:text-black transition-colors cursor-pointer"
+                    >
+                      ← Use a different number
+                    </button>
+                    <button
+                      onClick={handleResendOTP}
+                      disabled={resendLoading || resendCooldown > 0}
+                      className="text-[15.5px] text-[#052698] hover:text-[#052698]/70 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      {resendLoading ? "Sending…" : resendCooldown > 0 ? `Resend in ${resendCooldown}s` : "Resend OTP"}
+                    </button>
+                  </div>
                 </div>
               )}
 
@@ -476,7 +585,9 @@ export default function Onboarding() {
               <div>
                 <p className="text-black font-heading font-bold text-[17.5px]">Leave onboarding?</p>
                 <p className="text-black/60 text-[15.5px] mt-1.5 leading-relaxed">
-                  If you leave now your progress will be lost and you'll need to start over.
+                  {step === "tracking-email"
+                    ? "Your subscription is active — your payment is safe. You can complete setup later by signing in again."
+                    : "If you leave now your progress will be lost and you'll need to start over."}
                 </p>
               </div>
               <div className="flex gap-3">

@@ -79,7 +79,7 @@ export const api = {
     }),
 
   verifyToken: (token: string) =>
-    apiFetch<{ user_id: string; subscription_status: "pending" | "active" }>(`/auth/verify?token=${token}`),
+    apiFetch<{ user_id: string; subscription_status: "pending" | "active" | "none" }>(`/auth/verify?token=${token}`),
 
   logout: () =>
     apiFetch<{ message: string }>("/auth/logout", { method: "POST" }),
@@ -96,6 +96,12 @@ export const api = {
     apiFetch<{ status: string }>("/payments/confirm", {
       method: "POST",
       body: JSON.stringify({ otp_code }),
+    }),
+
+  applyCoupon: (code: string) =>
+    apiFetch<{ status: string; plan: string }>("/payments/apply-coupon", {
+      method: "POST",
+      body: JSON.stringify({ code }),
     }),
 
   // ── Onboarding ────────────────────────────────────────────────────────────

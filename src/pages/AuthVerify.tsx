@@ -51,7 +51,14 @@ export default function AuthVerify() {
 
         // Small delay so the user sees the success state before redirect
         setTimeout(() => {
-          if (res.subscription_status === "pending") {
+          if (res.subscription_status === "none") {
+            // New user — no subscription initiated yet.
+            // If a plan was already selected (from tracking or pricing flow),
+            // go straight to payment. Otherwise send them to pick a plan first.
+            const hasPlan = !!localStorage.getItem("tydline_package");
+            navigate(hasPlan ? "/onboarding" : "/no-subscription");
+          } else if (res.subscription_status === "pending") {
+            // Returning user who started payment but never completed it.
             navigate("/onboarding");
           } else if (!trackingEmail) {
             navigate("/onboarding?step=tracking-email");
@@ -109,7 +116,11 @@ export default function AuthVerify() {
                 <div>
                   <p className="text-[#052698] font-heading font-bold text-lg">Verified!</p>
                   <p className="text-black/50 text-sm mt-1">
-                    {subscriptionStatus === "active" ? "Redirecting to your dashboard…" : "Redirecting to payment…"}
+                    {subscriptionStatus === "active"
+                    ? "Redirecting to your dashboard…"
+                    : subscriptionStatus === "pending"
+                    ? "Redirecting to complete your payment…"
+                    : "Pending subscription — redirecting to plans…"}
                   </p>
                 </div>
               </>
