@@ -115,7 +115,7 @@ export default function Onboarding() {
   }, [resendCooldown]);
 
   // Tracking email step — user types prefix only; suffix is fixed
-  const TRACKING_SUFFIX = "@track.tydline.com";
+  const TRACKING_SUFFIX = ".track@tydline.com";
   const suggestedPrefix = (() => {
     const authEmail = localStorage.getItem("tydline_auth_email") ?? "";
     const domain = authEmail.split("@")[1] ?? "";
@@ -495,7 +495,7 @@ export default function Onboarding() {
                         className="flex-1 min-w-0 px-4 py-2.5 text-black bg-transparent text-[16.8px] focus:outline-none disabled:opacity-50"
                       />
                       <span className="flex items-center pr-4 text-[16.8px] text-black/35 select-none whitespace-nowrap">
-                        @track.tydline.com
+                        .track@tydline.com
                       </span>
                     </div>
                     {prefixAvailability === "checking" && (
@@ -526,7 +526,7 @@ export default function Onboarding() {
                       <div className="flex flex-col gap-0.5 min-w-0">
                         <span className="text-[14.8px] text-black/60">Your address will be:</span>
                         <span className="text-[14.8px] font-medium text-[#052698] break-all">
-                          {tEmailPrefix.trim()}@track.tydline.com
+                          {tEmailPrefix.trim()}.track@tydline.com
                         </span>
                       </div>
                       <button
