@@ -26,16 +26,23 @@ async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
 
 export type Shipment = {
   id: string;
-  bill_of_lading?: string;
-  container_number?: string;
-  vessel: string;
-  line: string;
-  origin: string;
-  destination: string;
-  eta: string;
+  bill_of_lading: string | null;
+  container_number: string | null;
+  carrier: string | null;
+  vessel: string | null;
+  line: string | null;
+  origin: string | null;
+  destination: string | null;
+  eta: string | null;
+  predicted_eta: string | null;
+  demurrage_risk: string | null;
+  free_days_remaining: number | null;
   days_left: number;
-  status: string;
   progress: number;
+  status: string;
+  last_updated: string;
+  user_id: string;
+  created_at: string;
 };
 
 export type ShipmentsResponse = {
@@ -119,7 +126,7 @@ export const api = {
     apiFetch<{ phones: string[] }>("/onboarding/whatsapp-phone"),
 
   setWhatsAppPhone: (phone: string) =>
-    apiFetch<{ user_id: string; phone: string }>("/onboarding/whatsapp-phone", {
+    apiFetch<{ user_id: string; phones: string[] }>("/onboarding/whatsapp-phone", {
       method: "POST",
       body: JSON.stringify({ phone }),
     }),
@@ -130,7 +137,7 @@ export const api = {
     apiFetch<unknown>("/account/plans"),
 
   getPlan: () =>
-    apiFetch<{ plan: string; status: string }>("/account/plan"),
+    apiFetch<{ plan: string | null; subscription_status: string }>("/account/plan"),
 
   // ── Dashboard ─────────────────────────────────────────────────────────────
 
@@ -155,7 +162,7 @@ export const api = {
     apiFetch<ApiApproval[]>("/dashboard/approvals"),
 
   approveShipment: (id: string) =>
-    apiFetch<{ message: string }>(`/dashboard/approvals/${id}/approve`, { method: "POST" }),
+    apiFetch<Shipment>(`/dashboard/approvals/${id}/approve`, { method: "POST" }),
 
   // ── Notify Parties ────────────────────────────────────────────────────────
 

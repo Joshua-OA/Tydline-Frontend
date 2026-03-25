@@ -77,8 +77,8 @@ const WA_CODES = [
 ];
 
 type PlanInfo = {
-  plan: string;
-  status: string;
+  plan: string | null;
+  subscription_status: string;
 };
 
 function Settings({ waPhoneSet, onWaPhoneUpdated }: { waPhoneSet?: boolean | null; onWaPhoneUpdated?: () => void }) {
@@ -167,7 +167,7 @@ function Settings({ waPhoneSet, onWaPhoneUpdated }: { waPhoneSet?: boolean | nul
                 <div className="flex items-center gap-2">
                   <p className="text-[16.6px] text-black font-medium">{planDisplay} Plan</p>
                   <span className={`text-[12.6px] px-2 py-0.5 border ${planColor[plan] ?? planColor.starter}`}>
-                    {planInfo?.status === "active" ? "Active" : "Active"}
+                    {planInfo?.subscription_status === "active" ? "Active" : "Inactive"}
                   </span>
                 </div>
                 {trackingEmail && (

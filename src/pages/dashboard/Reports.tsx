@@ -231,9 +231,9 @@ function Reports() {
     const q = search.toLowerCase();
     return (
       s.id.toLowerCase().includes(q) ||
-      s.vessel.toLowerCase().includes(q) ||
-      s.origin.toLowerCase().includes(q) ||
-      s.destination.toLowerCase().includes(q)
+      (s.vessel ?? "").toLowerCase().includes(q) ||
+      (s.origin ?? "").toLowerCase().includes(q) ||
+      (s.destination ?? "").toLowerCase().includes(q)
     );
   });
 
