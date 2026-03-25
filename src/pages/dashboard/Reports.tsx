@@ -188,21 +188,51 @@ function Reports() {
   const [filter, setFilter] = useState<FilterKey>("all");
   const [search, setSearch] = useState("");
 
+  // Manual tracking input
+  const [trackInput, setTrackInput] = useState("");
+  const [trackLoading, setTrackLoading] = useState(false);
+  const [trackError, setTrackError] = useState<string | null>(null);
+  const [trackSuccess, setTrackSuccess] = useState<string | null>(null);
+
   useEffect(() => {
     api.getPlan()
       .then((d) => { if (d?.plan) setPlan(d.plan); })
       .catch(() => {});
   }, []);
 
-  useEffect(() => {
-    api.getShipments()
+  function loadShipments() {
+    return api.getShipments()
       .then((res) => {
         console.log("[Reports] raw response:", res);
         setData(res ?? EMPTY);
       })
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
+  }
+
+  useEffect(() => {
+    loadShipments();
   }, []);
+
+  async function handleTrackSubmit() {
+    const val = trackInput.trim();
+    if (!val) return;
+    setTrackLoading(true);
+    setTrackError(null);
+    setTrackSuccess(null);
+    try {
+      await api.submitShipment({ bill_of_lading: val });
+      setTrackSuccess(`Shipment "${val}" submitted — we'll start tracking it shortly.`);
+      setTrackInput("");
+      // Refresh the shipments list
+      setLoading(true);
+      loadShipments();
+    } catch (e) {
+      setTrackError((e as Error).message);
+    } finally {
+      setTrackLoading(false);
+    }
+  }
 
   const total = data.total_pending_approval + data.total_active + data.total_completed;
 
@@ -277,6 +307,37 @@ function Reports() {
 
       {/* Tracking email info */}
       {trackingEmail && <TrackingEmailBanner email={trackingEmail} hasWhatsApp={hasWhatsApp} />}
+
+      {/* Manual tracking input */}
+      <div className="bg-[#FCFDFF] border border-[#052698]/20 px-5 py-4 flex flex-col gap-3">
+        <div>
+          <p className="text-[#052698] font-heading font-bold text-[16.6px]">Track a shipment manually</p>
+          <p className="text-black/85 text-[14.6px] mt-0.5">Enter a Bill of Lading or container number to start tracking it directly.</p>
+        </div>
+        {trackError && (
+          <div className="bg-red-50 border border-red-200 text-red-600 text-[14.6px] px-3 py-2">{trackError}</div>
+        )}
+        {trackSuccess && (
+          <div className="bg-green-50 border border-green-200 text-green-700 text-[14.6px] px-3 py-2">{trackSuccess}</div>
+        )}
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={trackInput}
+            onChange={(e) => { setTrackInput(e.target.value); setTrackError(null); setTrackSuccess(null); }}
+            onKeyDown={(e) => e.key === "Enter" && handleTrackSubmit()}
+            placeholder="e.g. MSKU7234891 or COSU1234567"
+            className="flex-1 border border-[#052698]/25 px-3 py-2.5 text-[15.6px] text-black placeholder-black/30 bg-white focus:outline-none focus:border-[#052698]/50"
+          />
+          <button
+            onClick={handleTrackSubmit}
+            disabled={trackLoading || !trackInput.trim()}
+            className="bg-[#052698] text-white text-[15.6px] font-medium px-5 py-2.5 hover:bg-[#052698]/90 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+          >
+            {trackLoading ? "Submitting…" : "Track"}
+          </button>
+        </div>
+      </div>
 
       {/* Shipments table with filters */}
       <div className="bg-[#FCFDFF] border border-[#052698]/20">
