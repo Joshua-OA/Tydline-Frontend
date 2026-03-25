@@ -105,11 +105,25 @@ export default function TrackingResults() {
   const [notifyEmail, setNotifyEmail] = useState("");
   const [notifySubmitted, setNotifySubmitted] = useState(false);
   const [notifyError, setNotifyError] = useState("");
+  const [notifyLoading, setNotifyLoading] = useState(false);
+  const [submittedShipmentId, setSubmittedShipmentId] = useState<string | null>(null);
 
   useEffect(() => {
     const t = setTimeout(() => setIsLoading(false), 2200);
     return () => clearTimeout(t);
   }, []);
+
+  // When the fallback screen shows, register the shipment on the backend
+  // and store the returned id so the "Notify me" button can use it.
+  useEffect(() => {
+    if (!isLoading && isUnknownBl && query) {
+      api.submitShipment({ bill_of_lading: query })
+        .then((res) => setSubmittedShipmentId(res.id))
+        .catch(() => {
+          // Non-fatal — the notify button will show an error if id is missing
+        });
+    }
+  }, [isLoading, isUnknownBl, query]);
 
   function handleSelectPlan(pkg: SelectedPackage) {
     setSelectedPackage(pkg);
@@ -163,13 +177,31 @@ export default function TrackingResults() {
     }
   }
 
-  function handleNotifySubmit() {
-    if (!notifyEmail.trim()) {
+  async function handleNotifySubmit() {
+    const email = notifyEmail.trim();
+    if (!email) {
       setNotifyError("Please enter your email address.");
       return;
     }
+    if (!submittedShipmentId) {
+      setNotifyError("Something went wrong, please try again.");
+      return;
+    }
     setNotifyError("");
-    setNotifySubmitted(true);
+    setNotifyLoading(true);
+    try {
+      await api.notifyMe(submittedShipmentId, email);
+      setNotifySubmitted(true);
+    } catch (e) {
+      const msg = (e as Error).message ?? "";
+      if (msg.includes("401") || msg.toLowerCase().includes("unauthorized")) {
+        navigate("/");
+        return;
+      }
+      setNotifyError("Something went wrong, please try again.");
+    } finally {
+      setNotifyLoading(false);
+    }
   }
 
   function backFromStep() {
@@ -260,9 +292,10 @@ export default function TrackingResults() {
                     </div>
                     <button
                       onClick={handleNotifySubmit}
-                      className="bg-[#052698] text-white text-sm font-medium px-6 py-3 hover:bg-[#052698]/90 transition-colors cursor-pointer"
+                      disabled={notifyLoading}
+                      className="bg-[#052698] text-white text-sm font-medium px-6 py-3 hover:bg-[#052698]/90 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      Notify me →
+                      {notifyLoading ? "Submitting…" : "Notify me →"}
                     </button>
                   </div>
                 ) : (
@@ -275,8 +308,8 @@ export default function TrackingResults() {
                     <div className="flex flex-col gap-1.5">
                       <h3 className="text-[#052698] font-heading font-bold text-base">You're on the list</h3>
                       <p className="text-sm text-black/65 leading-relaxed">
-                        We'll send tracking results for <span className="text-[#052698] font-medium">{query}</span> to{" "}
-                        <span className="text-[#052698] font-medium">{notifyEmail}</span> as soon as they're available.
+                        Got it — we'll email you at{" "}
+                        <span className="text-[#052698] font-medium">{notifyEmail}</span> the moment tracking data is ready.
                       </p>
                     </div>
                   </div>

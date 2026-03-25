@@ -156,6 +156,12 @@ export const api = {
       body: JSON.stringify(data),
     }),
 
+  notifyMe: (id: string, email: string) =>
+    apiFetch<{ message: string }>(`/dashboard/shipments/${id}/notify-me`, {
+      method: "POST",
+      body: JSON.stringify({ email }),
+    }),
+
   // ── Approvals ─────────────────────────────────────────────────────────────
 
   getApprovals: () =>
