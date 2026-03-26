@@ -150,6 +150,9 @@ export const api = {
   getCompletedShipments: () =>
     apiFetch<Shipment[]>("/dashboard/shipments/completed"),
 
+  getShipment: (id: string) =>
+    apiFetch<Shipment>(`/dashboard/shipments/${id}`),
+
   submitShipment: (data: Record<string, unknown>) =>
     apiFetch<{ id: string; status: string }>("/dashboard/shipments/submit", {
       method: "POST",

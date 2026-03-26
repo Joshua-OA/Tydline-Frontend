@@ -107,21 +107,44 @@ export default function TrackingResults() {
   const [notifyError, setNotifyError] = useState("");
   const [notifyLoading, setNotifyLoading] = useState(false);
   const [submittedShipmentId, setSubmittedShipmentId] = useState<string | null>(null);
+  const [realShipment, setRealShipment] = useState<import("../services/api").Shipment | null>(null);
 
   useEffect(() => {
     const t = setTimeout(() => setIsLoading(false), 2200);
     return () => clearTimeout(t);
   }, []);
 
-  // When the fallback screen shows, register the shipment on the backend
-  // and store the returned id so the "Notify me" button can use it.
+  // When the fallback screen shows, register the shipment on the backend,
+  // then poll until real tracking data (vessel) is available.
   useEffect(() => {
     if (!isLoading && isUnknownBl && query) {
+      let cancelled = false;
       api.submitShipment({ bill_of_lading: query })
-        .then((res) => setSubmittedShipmentId(res.id))
+        .then((res) => {
+          if (cancelled) return;
+          setSubmittedShipmentId(res.id);
+          // Poll the shipment until vessel data appears (max ~10 s)
+          let attempts = 0;
+          function poll() {
+            if (cancelled) return;
+            api.getShipment(res.id)
+              .then((s) => {
+                if (cancelled) return;
+                if (s.vessel || s.origin || s.destination) {
+                  setRealShipment(s);
+                } else if (attempts < 5) {
+                  attempts++;
+                  setTimeout(poll, 2000);
+                }
+              })
+              .catch(() => {});
+          }
+          setTimeout(poll, 1500);
+        })
         .catch(() => {
-          // Non-fatal — the notify button will show an error if id is missing
+          // Not logged in or other error — notify button will show error if id is missing
         });
+      return () => { cancelled = true; };
     }
   }, [isLoading, isUnknownBl, query]);
 
@@ -261,8 +284,51 @@ export default function TrackingResults() {
               </div>
             )}
 
+            {/* ── REAL DATA RETURNED — show live tracking card ── */}
+            {step === "result" && !isLoading && isUnknownBl && realShipment && (
+              <div className="w-full max-w-3xl flex flex-col gap-4">
+                <div>
+                  <p className="text-xs text-black/40 uppercase tracking-widest mb-1">Tracking</p>
+                  <h2 className="text-[#052698] text-2xl font-heading font-extrabold tracking-tight">{query}</h2>
+                </div>
+                <div className="bg-[#FCFDFF] border border-[#052698]/20 p-4 md:p-5">
+                  <div className="flex flex-col md:flex-row md:items-center gap-4">
+                    <div className="shrink-0 md:w-56 md:mr-8">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-[#052698] font-medium text-[16.6px]">{realShipment.container_number ?? realShipment.bill_of_lading}</span>
+                        <span className="text-[14.6px] px-2 py-0.5 bg-[#052698]/8 text-[#052698] border border-[#052698]/20">{realShipment.status}</span>
+                      </div>
+                      <p className="text-black text-[16.6px] mt-1">{realShipment.vessel} · {realShipment.line}</p>
+                      <p className="text-black/80 text-[16.6px] mt-0.5">{realShipment.origin} → {realShipment.destination}</p>
+                    </div>
+                    <div className="flex-1 flex flex-col gap-1.5">
+                      <div className="flex items-center justify-between text-[14.6px] text-black/80">
+                        <span>{realShipment.origin}</span>
+                        <span>{realShipment.destination}</span>
+                      </div>
+                      <div className="relative h-1.5 bg-[#052698]/10 rounded-full overflow-hidden">
+                        <div className="h-full bg-[#052698] rounded-full" style={{ width: `${realShipment.progress}%` }} />
+                      </div>
+                      <div className="text-[14.6px] text-black/85 text-center">{realShipment.progress}% in transit</div>
+                    </div>
+                    {realShipment.eta && (
+                      <div className="shrink-0 md:w-36 md:text-right md:ml-8">
+                        <p className="text-[#052698] font-heading font-medium text-[16.6px]">
+                          {new Date(realShipment.eta).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                        </p>
+                        <p className="text-black/80 text-[16.6px] mt-0.5">{realShipment.days_left} days remaining</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <p className="text-sm text-black/45 text-center">
+                  Live tracking data · Log in to your dashboard for full details and notifications
+                </p>
+              </div>
+            )}
+
             {/* ── NO MATCH — notify me ── */}
-            {step === "result" && !isLoading && isUnknownBl && (
+            {step === "result" && !isLoading && isUnknownBl && !realShipment && (
               <div className="w-full max-w-md flex flex-col gap-6">
                 <div>
                   <p className="text-xs text-black/40 uppercase tracking-widest mb-1">Tracking</p>
