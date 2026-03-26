@@ -9,12 +9,26 @@ const statusStyles: Record<string, string> = {
   "On Time": "bg-green-50 text-green-700 border border-green-200",
   "Delayed": "bg-red-50 text-red-600 border border-red-200",
   "In Transit": "bg-[#052698]/8 text-[#052698] border border-[#052698]/20",
+  "Arrived": "bg-green-50 text-green-700 border border-green-200",
+  "Delivered": "bg-green-50 text-green-700 border border-green-200",
+  "Discharged": "bg-[#052698]/8 text-[#052698] border border-[#052698]/20",
+  "Tracking Started": "bg-black/5 text-black/60 border border-black/10",
+  "Pending Approval": "bg-amber-50 text-amber-700 border border-amber-200",
 };
 
 const statusLabel: Record<string, string> = {
   on_time: "On Time",
   delayed: "Delayed",
   in_transit: "In Transit",
+  // ShipsGo v2 statuses (uppercase)
+  IN_TRANSIT: "In Transit",
+  ARRIVED: "Arrived",
+  DELIVERED: "Delivered",
+  DISCHARGED: "Discharged",
+  LOADED: "In Transit",
+  // Backend internal statuses
+  tracking_started: "Tracking Started",
+  pending_approval: "Pending Approval",
 };
 
 function displayStatus(raw: string) {
