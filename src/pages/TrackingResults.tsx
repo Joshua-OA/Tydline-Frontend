@@ -74,7 +74,7 @@ function ChannelBadge({ icon, label }: { icon: React.ReactNode; label: string })
 export default function TrackingResults() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
-  const { setSelectedPackage, selectedPackage } = useApp();
+  const { setSelectedPackage, selectedPackage, userId } = useApp();
 
   const query = params.get("q") ?? "";
 
@@ -82,7 +82,9 @@ export default function TrackingResults() {
     navigate(`/track?q=${encodeURIComponent(query)}&step=${s}${extra}`);
   }
   const q = query.toUpperCase();
-  const foundShipment = mockShipments.find(
+  // Logged-in users always go through the real backend — skip mock data entirely.
+  // Non-logged-in visitors get the demo mock result to encourage sign-up.
+  const foundShipment = userId ? null : mockShipments.find(
     (s) =>
       s.id.includes(q) ||
       s.vessel.includes(q) ||
@@ -114,39 +116,39 @@ export default function TrackingResults() {
     return () => clearTimeout(t);
   }, []);
 
-  // When the fallback screen shows, register the shipment on the backend,
-  // then poll until real tracking data (vessel) is available.
+  // For logged-in users: submit the BL immediately on mount (during the loading
+  // animation) and poll for real tracking data. Starting early means data often
+  // arrives by the time the loading screen clears, giving an instant result.
+  // Max 12 polls × 2 s = ~24 s window before giving up and showing "We're on it".
   useEffect(() => {
-    if (!isLoading && isUnknownBl && query) {
-      let cancelled = false;
-      api.submitShipment({ bill_of_lading: query })
-        .then((res) => {
+    if (!query || !userId) return;
+    let cancelled = false;
+
+    api.submitShipment({ bill_of_lading: query })
+      .then((res) => {
+        if (cancelled) return;
+        setSubmittedShipmentId(res.id);
+        let attempts = 0;
+        function poll() {
           if (cancelled) return;
-          setSubmittedShipmentId(res.id);
-          // Poll the shipment until vessel data appears (max ~10 s)
-          let attempts = 0;
-          function poll() {
-            if (cancelled) return;
-            api.getShipment(res.id)
-              .then((s) => {
-                if (cancelled) return;
-                if (s.vessel || s.origin || s.destination) {
-                  setRealShipment(s);
-                } else if (attempts < 5) {
-                  attempts++;
-                  setTimeout(poll, 2000);
-                }
-              })
-              .catch(() => {});
-          }
-          setTimeout(poll, 1500);
-        })
-        .catch(() => {
-          // Not logged in or other error — notify button will show error if id is missing
-        });
-      return () => { cancelled = true; };
-    }
-  }, [isLoading, isUnknownBl, query]);
+          api.getShipment(res.id)
+            .then((s) => {
+              if (cancelled) return;
+              if (s.vessel || s.origin || s.destination) {
+                setRealShipment(s);
+              } else if (attempts < 12) {
+                attempts++;
+                setTimeout(poll, 2000);
+              }
+            })
+            .catch(() => {});
+        }
+        poll(); // start polling immediately — no artificial delay
+      })
+      .catch(() => {});
+
+    return () => { cancelled = true; };
+  }, [query, userId]);
 
   function handleSelectPlan(pkg: SelectedPackage) {
     setSelectedPackage(pkg);

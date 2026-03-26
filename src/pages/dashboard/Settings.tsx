@@ -105,11 +105,10 @@ function Settings({ waPhoneSet, onWaPhoneUpdated }: { waPhoneSet?: boolean | nul
   useEffect(() => {
     api.getWhatsAppPhone()
       .then((res) => {
-        console.log("[Settings] getWhatsAppPhone response:", res);
         const first = Array.isArray(res.phones) && res.phones.length > 0 ? res.phones[0] : null;
         setWaPhone(first);
       })
-      .catch((e) => console.warn("[Settings] getWhatsAppPhone error:", e));
+      .catch(() => {});
   }, []);
 
   const plan = planInfo?.plan ?? selectedPackage?.plan ?? "starter";
@@ -133,8 +132,7 @@ function Settings({ waPhoneSet, onWaPhoneUpdated }: { waPhoneSet?: boolean | nul
     setSaving(true);
     setSaveError(null);
     try {
-      const result = await api.setWhatsAppPhone(digits);
-      console.log("[Settings] setWhatsAppPhone response:", result);
+      await api.setWhatsAppPhone(digits);
       setWaPhone(`${editCode} ${raw}`);
       setSaveSuccess(true);
       setEditing(false);

@@ -7,6 +7,15 @@ const WA_NUMBER = (import.meta.env.VITE_WHATSAPP_NUMBER as string | undefined) ?
 
 // ── Types & helpers ────────────────────────────────────────────────────────────
 
+function fmtDate(s: string | null | undefined): string {
+  if (!s) return "—";
+  try {
+    return new Date(s).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+  } catch {
+    return s;
+  }
+}
+
 type FilterKey = "all" | "active" | "completed" | "pending" | "on_time" | "delayed" | "in_transit";
 
 const statusLabel: Record<string, string> = {
@@ -193,6 +202,7 @@ function Reports() {
   const [trackLoading, setTrackLoading] = useState(false);
   const [trackError, setTrackError] = useState<string | null>(null);
   const [trackSuccess, setTrackSuccess] = useState<string | null>(null);
+  const [submittedShipment, setSubmittedShipment] = useState<Shipment | null>(null);
 
   useEffect(() => {
     api.getPlan()
@@ -203,7 +213,6 @@ function Reports() {
   function loadShipments() {
     return api.getShipments()
       .then((res) => {
-        console.log("[Reports] raw response:", res);
         setData(res ?? EMPTY);
       })
       .catch((e: Error) => setError(e.message))
@@ -220,9 +229,13 @@ function Reports() {
     setTrackLoading(true);
     setTrackError(null);
     setTrackSuccess(null);
+    setSubmittedShipment(null);
     try {
-      await api.submitShipment({ bill_of_lading: val });
-      setTrackSuccess(`Shipment "${val}" submitted — we'll start tracking it shortly.`);
+      const result = await api.submitShipment({ bill_of_lading: val });
+      // Fetch full details for the submitted shipment
+      const detail = await api.getShipment(result.id);
+      setSubmittedShipment(detail);
+      setTrackSuccess(`Shipment "${val}" submitted — tracking started.`);
       setTrackInput("");
       // Refresh the shipments list
       setLoading(true);
@@ -320,6 +333,17 @@ function Reports() {
         {trackSuccess && (
           <div className="bg-green-50 border border-green-200 text-green-700 text-[14.6px] px-3 py-2">{trackSuccess}</div>
         )}
+        {submittedShipment && (
+          <div className="border border-[#052698]/15 bg-white px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-2 text-[14.6px]">
+            <span className="text-[#052698] font-medium">{submittedShipment.bill_of_lading ?? submittedShipment.container_number}</span>
+            {submittedShipment.vessel && <span className="text-black/80">· {submittedShipment.vessel}</span>}
+            {submittedShipment.origin && submittedShipment.destination && (
+              <span className="text-black/80">· {submittedShipment.origin} → {submittedShipment.destination}</span>
+            )}
+            {submittedShipment.eta && <span className="text-black/80">· ETA {fmtDate(submittedShipment.eta)}</span>}
+            <span className="ml-auto text-[13px] px-2 py-0.5 bg-[#052698]/8 text-[#052698] border border-[#052698]/20">{submittedShipment.status}</span>
+          </div>
+        )}
         <div className="flex gap-2">
           <input
             type="text"
@@ -410,7 +434,7 @@ function Reports() {
                       </td>
                       <td className="px-5 py-3.5 text-black text-[16.6px] hidden md:table-cell">{row.vessel}</td>
                       <td className="px-5 py-3.5 text-black/85 text-[16.6px] hidden md:table-cell">{row.origin} → {row.destination}</td>
-                      <td className="px-5 py-3.5 text-black text-[16.6px]">{row.eta}</td>
+                      <td className="px-5 py-3.5 text-black text-[16.6px]">{fmtDate(row.eta)}</td>
                       <td className="px-5 py-3.5">
                         <span className={`text-[14.6px] px-2 py-1 ${statusStyles[label] ?? "bg-black/5 text-black/80 border border-black/10"}`}>
                           {label}

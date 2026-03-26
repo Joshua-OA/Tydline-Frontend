@@ -151,19 +151,20 @@ function DonutChart({ segments, size = 130 }: {
 }) {
   const total = segments.reduce((s, d) => s + d.value, 0);
   const r = 42; const cx = 65; const cy = 65;
-  let cumulative = 0;
   function polarToXY(pct: number) {
     const angle = (pct * 360 - 90) * (Math.PI / 180);
     return { x: cx + r * Math.cos(angle), y: cy + r * Math.sin(angle) };
   }
+  const segmentsWithOffsets = segments.map((seg, i) => {
+    const start = segments.slice(0, i).reduce((acc, s) => acc + s.value / total, 0);
+    return { ...seg, start, end: start + seg.value / total };
+  });
   return (
     <div className="flex flex-col items-center gap-3">
       <svg width={size} height={size} viewBox="0 0 130 130">
-        {segments.map((seg) => {
-          const start = cumulative;
-          cumulative += seg.value / total;
-          const p1 = polarToXY(start);
-          const p2 = polarToXY(cumulative);
+        {segmentsWithOffsets.map((seg) => {
+          const p1 = polarToXY(seg.start);
+          const p2 = polarToXY(seg.end);
           const large = seg.value / total > 0.5 ? 1 : 0;
           const d = `M ${cx} ${cy} L ${p1.x} ${p1.y} A ${r} ${r} 0 ${large} 1 ${p2.x} ${p2.y} Z`;
           return <path key={seg.label} d={d} fill={seg.color} stroke="#fff" strokeWidth="2" />;

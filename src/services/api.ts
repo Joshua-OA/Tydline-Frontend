@@ -14,7 +14,6 @@ async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
     throw new Error(FRIENDLY_ERROR);
   }
   const data: unknown = await res.json().catch(() => ({}));
-  console.log(`[API] ${options?.method ?? "GET"} ${path}`, data);
   if (!res.ok) {
     const err = data as { message?: string; detail?: string };
     throw new Error(err.message ?? err.detail ?? FRIENDLY_ERROR);
@@ -54,20 +53,9 @@ export type ShipmentsResponse = {
   total_completed: number;
 };
 
-export type ApiApproval = {
-  id: string;
-  container_number: string;
-  bill_of_lading: string;
-  carrier: string | null;
-  status: string;
-  eta: string | null;
-  predicted_eta: string | null;
-  demurrage_risk: string | null;
-  free_days_remaining: number | null;
-  last_updated: string;
-  created_at: string;
-  user_id: string;
-};
+// Same shape as ShipmentRead — vessel/origin/destination/line/days_left/progress
+// are returned by the backend but were missing from the old type.
+export type ApiApproval = Shipment;
 
 export type NotifyParty = {
   id: string;

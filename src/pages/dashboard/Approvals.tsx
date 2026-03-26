@@ -1,6 +1,15 @@
 import { useState, useEffect } from "react";
 import { api, type ApiApproval } from "../../services/api";
 
+function fmtDate(s: string | null | undefined): string {
+  if (!s) return "—";
+  try {
+    return new Date(s).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+  } catch {
+    return s;
+  }
+}
+
 function Approvals() {
   const [approvals, setApprovals] = useState<ApiApproval[]>([]);
   const [loading, setLoading] = useState(true);
@@ -10,7 +19,6 @@ function Approvals() {
   useEffect(() => {
     api.getApprovals()
       .then((data) => {
-        console.log("[Approvals] raw response:", data);
         setApprovals(Array.isArray(data) ? data : []);
       })
       .catch((e: Error) => setError(e.message))
@@ -76,10 +84,10 @@ function Approvals() {
                   {/* ETA / dates */}
                   <p className="text-[14.6px] text-black/80">
                     {item.eta
-                      ? <>ETA {item.eta}</>
+                      ? <>ETA {fmtDate(item.eta)}</>
                       : item.predicted_eta
-                      ? <>Predicted ETA {item.predicted_eta}</>
-                      : <>Submitted {new Date(item.created_at).toLocaleDateString()}</>
+                      ? <>Predicted ETA {fmtDate(item.predicted_eta)}</>
+                      : <>Submitted {fmtDate(item.created_at)}</>
                     }
                     {item.free_days_remaining != null && (
                       <> · {item.free_days_remaining} free days remaining</>

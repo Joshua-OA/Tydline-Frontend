@@ -67,7 +67,7 @@ export default function Onboarding() {
     };
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
-  }, [step]);
+  }, [step, navigate]);
 
   // Payment step
   const [countryCode, setCountryCode] = useState("+233");
@@ -131,7 +131,7 @@ export default function Onboarding() {
 
   async function checkPrefixAvailability() {
     const prefix = tEmailPrefix.trim();
-    if (!prefix || !/^[a-z0-9][a-z0-9.\-]*[a-z0-9]$/.test(prefix)) return;
+    if (!prefix || !/^[a-z0-9][a-z0-9.-]*[a-z0-9]$/.test(prefix)) return;
     setPrefixAvailability("checking");
     try {
       const res = await api.checkTrackingPrefix(prefix);
@@ -217,7 +217,7 @@ export default function Onboarding() {
 
   async function handleSetTrackingEmail() {
     const prefix = tEmailPrefix.trim().toLowerCase();
-    if (!prefix || !/^[a-z0-9][a-z0-9.\-]*[a-z0-9]$/.test(prefix)) {
+    if (!prefix || !/^[a-z0-9][a-z0-9.-]*[a-z0-9]$/.test(prefix)) {
       setTEmailError("Use only letters, numbers, dots, or hyphens — e.g. yourcompany");
       return;
     }
@@ -485,7 +485,7 @@ export default function Onboarding() {
                         type="text"
                         value={tEmailPrefix}
                         onChange={(e) => {
-                          setTEmailPrefix(e.target.value.toLowerCase().replace(/[^a-z0-9.\-]/g, ""));
+                          setTEmailPrefix(e.target.value.toLowerCase().replace(/[^a-z0-9.-]/g, ""));
                           setPrefixAvailability("idle");
                           setTEmailError("");
                         }}
