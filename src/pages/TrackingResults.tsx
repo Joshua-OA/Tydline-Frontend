@@ -203,19 +203,24 @@ export default function TrackingResults() {
   }
 
   async function handleNotifySubmit() {
-    const email = notifyEmail.trim();
-    if (!email) {
+    const trimmedEmail = notifyEmail.trim();
+    if (!trimmedEmail) {
       setNotifyError("Please enter your email address.");
-      return;
-    }
-    if (!submittedShipmentId) {
-      setNotifyError("Something went wrong, please try again.");
       return;
     }
     setNotifyError("");
     setNotifyLoading(true);
     try {
-      await api.notifyMe(submittedShipmentId, email);
+      if (userId && submittedShipmentId) {
+        // Logged-in user with a known shipment ID — use the dedicated notify endpoint
+        await api.notifyMe(submittedShipmentId, trimmedEmail);
+      } else {
+        // Not logged in (or no shipment ID yet) — send a magic link so they can
+        // track from the dashboard; store the container query so it loads on login
+        localStorage.setItem("tydline_tracking_query", query);
+        localStorage.setItem("tydline_auth_email", trimmedEmail);
+        await api.requestLink(trimmedEmail, "", { tracking_query: query });
+      }
       setNotifySubmitted(true);
     } catch (e) {
       const msg = (e as Error).message ?? "";
@@ -343,8 +348,10 @@ export default function TrackingResults() {
                       <h3 className="text-[#052698] font-heading font-bold text-base">We're on it</h3>
                       <p className="text-sm text-black/65 leading-relaxed">
                         We've queued <span className="text-[#052698] font-medium">{query}</span> for tracking. Since this
-                        is a new shipment, it may take a short while to pull the latest data. Enter your email and
-                        we'll notify you the moment it's ready.
+                        is a new shipment, it may take a short while to pull the latest data.{" "}
+                        {userId
+                          ? "Enter your email and we'll notify you the moment it's ready."
+                          : "Enter your email and we'll send you a secure link to access your tracking dashboard."}
                       </p>
                     </div>
                     <div className="flex flex-col gap-1.5">
@@ -374,10 +381,14 @@ export default function TrackingResults() {
                       </svg>
                     </div>
                     <div className="flex flex-col gap-1.5">
-                      <h3 className="text-[#052698] font-heading font-bold text-base">You're on the list</h3>
+                      <h3 className="text-[#052698] font-heading font-bold text-base">
+                        {userId ? "You're on the list" : "Check your inbox"}
+                      </h3>
                       <p className="text-sm text-black/65 leading-relaxed">
-                        Got it — we'll email you at{" "}
-                        <span className="text-[#052698] font-medium">{notifyEmail}</span> the moment tracking data is ready.
+                        {userId
+                          ? <>Got it — we'll email you at <span className="text-[#052698] font-medium">{notifyEmail}</span> the moment tracking data is ready.</>
+                          : <>We've sent a secure login link to <span className="text-[#052698] font-medium">{notifyEmail}</span>. Open it to access your dashboard and track <span className="text-[#052698] font-medium">{query}</span>.</>
+                        }
                       </p>
                     </div>
                   </div>
