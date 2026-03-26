@@ -473,7 +473,7 @@ export default function Onboarding() {
                   <div className="border border-[#052698]/20 bg-[#FCFDFF] p-4 flex flex-col gap-1.5">
                     <p className="text-[14.8px] font-medium text-[#052698]">How it works</p>
                     <p className="text-[14.8px] text-black/70 leading-relaxed">
-                      When your carrier sends a shipping update to your email, <span className="text-black font-medium">forward it or CC</span> your Tydline tracking address. We extract the data and send you alerts via {selectedPackage?.name?.includes("WhatsApp") ? "WhatsApp" : selectedPackage?.plan === "growth" ? "email and WhatsApp" : selectedPackage?.plan === "pro" ? "email, WhatsApp, and ERP" : "your chosen channel"} automatically.
+                      When your carrier sends a shipping update to your email, <span className="text-black font-medium">forward it or CC</span> your Tydline tracking address. We extract the data and send you alerts via {selectedPackage?.plan === "pro" ? "email, WhatsApp, and ERP" : selectedPackage?.plan === "growth" ? "email and WhatsApp" : selectedPackage?.channel === "whatsapp" ? "WhatsApp" : "email"} automatically.
                     </p>
                   </div>
 

@@ -1,7 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { NavLink, Routes, Route, useNavigate } from "react-router-dom";
 import { useApp } from "../../store/appContext";
 import { api } from "../../services/api";
+import { driver } from "driver.js";
+import "driver.js/dist/driver.css";
 const logo = "/tydline-sqaurlogo.png";
 import Reports from "./Reports";
 import UpcomingShipments from "./UpcomingShipments";
@@ -98,11 +100,13 @@ type NavItemProps = {
   label: string;
   end?: boolean;
   onClick?: () => void;
+  id?: string;
 };
 
-function NavItem({ to, icon, label, end = false, onClick }: NavItemProps) {
+function NavItem({ to, icon, label, end = false, onClick, id }: NavItemProps) {
   return (
     <NavLink
+      id={id}
       to={to}
       end={end}
       onClick={onClick}
@@ -131,15 +135,15 @@ function Sidebar({ onClose, onLogout }: SidebarProps) {
 
       {/* Nav */}
       <nav className="flex-1 py-3 flex flex-col gap-0.5 px-2">
-        <NavItem to="/dashboard" end icon={<IconReports />} label="Reports" onClick={onClose} />
-        <NavItem to="/dashboard/shipments" icon={<IconShipments />} label="Upcoming Shipments" onClick={onClose} />
-        <NavItem to="/dashboard/approvals" icon={<IconApprovals />} label="Approvals" onClick={onClose} />
-        <NavItem to="/dashboard/notifications" icon={<IconNotifications />} label="Notifications" onClick={onClose} />
+        <NavItem id="tour-reports" to="/dashboard" end icon={<IconReports />} label="Reports" onClick={onClose} />
+        <NavItem id="tour-shipments" to="/dashboard/shipments" icon={<IconShipments />} label="Upcoming Shipments" onClick={onClose} />
+        <NavItem id="tour-approvals" to="/dashboard/approvals" icon={<IconApprovals />} label="Approvals" onClick={onClose} />
+        <NavItem id="tour-notifications" to="/dashboard/notifications" icon={<IconNotifications />} label="Notifications" onClick={onClose} />
       </nav>
 
       {/* Settings + Logout at bottom */}
       <div className="px-2 pb-3 border-t border-[#052698]/15 pt-2 flex flex-col gap-0.5">
-        <NavItem to="/dashboard/settings" icon={<IconSettings />} label="Settings" onClick={onClose} />
+        <NavItem id="tour-settings" to="/dashboard/settings" icon={<IconSettings />} label="Settings" onClick={onClose} />
         <button
           onClick={onLogout}
           className="flex items-center gap-3 px-3 py-2.5 text-[14.6px] text-black hover:bg-red-50 hover:text-red-600 transition-all duration-150 w-full cursor-pointer"
@@ -170,6 +174,13 @@ const WA_CODES = [
   { code: "+61", flag: "🇦🇺", label: "AU" },
 ];
 
+const WA_ICON = (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" className="text-green-600 shrink-0">
+    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" />
+    <path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.559 4.122 1.531 5.855L.057 23.886a.5.5 0 00.611.61l6.101-1.525A11.935 11.935 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.886 0-3.655-.502-5.187-1.38l-.372-.214-3.853.963.978-3.773-.232-.386A9.937 9.937 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z" />
+  </svg>
+);
+
 function WhatsAppSetupModal({ onDone }: { onDone: () => void }) {
   const [countryCode, setCountryCode] = useState("+233");
   const [phone, setPhone] = useState("");
@@ -179,7 +190,6 @@ function WhatsAppSetupModal({ onDone }: { onDone: () => void }) {
   async function handleSubmit() {
     const raw = phone.trim();
     if (!raw) return;
-    // Backend expects digits only, no spaces/dashes, country code prefix
     const digits = `${countryCode}${raw}`.replace(/\D/g, "");
     setSaving(true);
     setError(null);
@@ -206,16 +216,11 @@ function WhatsAppSetupModal({ onDone }: { onDone: () => void }) {
         {/* Header */}
         <div className="px-6 pt-6 pb-4 border-b border-[#052698]/10">
           <div className="flex items-center gap-3 mb-1">
-            <span className="text-green-600">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" />
-                <path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.559 4.122 1.531 5.855L.057 23.886a.5.5 0 00.611.61l6.101-1.525A11.935 11.935 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.886 0-3.655-.502-5.187-1.38l-.372-.214-3.853.963.978-3.773-.232-.386A9.937 9.937 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z" />
-              </svg>
-            </span>
+            {WA_ICON}
             <h2 className="text-[#052698] font-heading font-extrabold text-[20.6px]">Set up WhatsApp notifications</h2>
           </div>
           <p className="text-black/80 text-[15.6px]">
-            Your plan includes WhatsApp tracking. Register your number to forward shipment details, receive live status updates, and chat with the tracking agent directly on WhatsApp.
+            Your plan includes WhatsApp tracking. Register your number to receive live shipment updates and chat with the tracking agent directly on WhatsApp.
           </p>
         </div>
 
@@ -246,10 +251,10 @@ function WhatsAppSetupModal({ onDone }: { onDone: () => void }) {
                 onChange={(e) => setPhone(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
                 placeholder="55 123 4567"
-                className="flex-1 px-3 py-2.5 text-[15.6px] text-black placeholder-black/30 bg-white"
+                className="flex-1 px-3 py-2.5 text-[15.6px] text-black placeholder-black/30 bg-white focus:outline-none"
               />
             </div>
-            <p className="text-[13.6px] text-black/80 mt-1.5">Must be active on WhatsApp. Forward any shipment confirmation to this number and we'll start tracking it. You can change this anytime in Settings.</p>
+            <p className="text-[13.6px] text-black/60 mt-1.5">Must be active on WhatsApp. You can change this anytime in Settings.</p>
           </div>
 
           <button
@@ -262,7 +267,7 @@ function WhatsAppSetupModal({ onDone }: { onDone: () => void }) {
 
           <button
             onClick={dismiss}
-            className="text-[14.6px] text-black/80 hover:text-black/80 transition-colors cursor-pointer text-center"
+            className="text-[14.6px] text-black/50 hover:text-black transition-colors cursor-pointer text-center"
           >
             I'll set this up later
           </button>
@@ -276,6 +281,8 @@ function Dashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { clearUser, selectedPackage } = useApp();
   const navigate = useNavigate();
+  const tourStarted = useRef(false);
+  const [tourComplete, setTourComplete] = useState(() => !!localStorage.getItem("tydline_tour_done"));
   const [showWaModal, setShowWaModal] = useState(false);
   const [waPhoneSet, setWaPhoneSet] = useState<boolean | null>(null);
   const [hasWaPlan, setHasWaPlan] = useState(false);
@@ -286,7 +293,8 @@ function Dashboard() {
   useEffect(() => {
     api.getPlan().then((planData) => {
       const plan = planData?.plan ?? selectedPackage?.plan ?? "starter";
-      const eligible = plan === "growth" || plan === "pro" || plan === "custom";
+      const starterWhatsApp = plan === "starter" && selectedPackage?.channel === "whatsapp";
+      const eligible = plan === "growth" || plan === "pro" || plan === "custom" || starterWhatsApp;
       setHasWaPlan(eligible);
       if (!eligible) return;
 
@@ -294,7 +302,7 @@ function Dashboard() {
         const isSet = Array.isArray(res.phones) && res.phones.length > 0;
         setWaPhoneSet(isSet);
         const dismissed = localStorage.getItem("tydline_wa_prompt_dismissed");
-        if (!isSet && !dismissed) setShowWaModal(true);
+        if (!isSet && !dismissed && tourComplete) setShowWaModal(true);
       }).catch(() => {
         setWaPhoneSet(true);
       });
@@ -308,7 +316,88 @@ function Dashboard() {
     }).catch(() => {});
   }
 
+  // When tour finishes (first session), show WA modal if applicable
+  useEffect(() => {
+    if (!tourComplete || !hasWaPlan || waPhoneSet !== false) return;
+    const dismissed = localStorage.getItem("tydline_wa_prompt_dismissed");
+    if (!dismissed) setShowWaModal(true);
+  }, [tourComplete, hasWaPlan, waPhoneSet]);
+
   const showWaBanner = hasWaPlan && waPhoneSet === false && !toastDismissed;
+
+  useEffect(() => {
+    const toured = localStorage.getItem("tydline_tour_done");
+    if (toured || tourStarted.current) return;
+    tourStarted.current = true;
+
+    // Small delay so the sidebar has rendered
+    const t = setTimeout(() => {
+      const driverObj = driver({
+        showProgress: true,
+        progressText: "{{current}} / {{total}}",
+        nextBtnText: "Next →",
+        prevBtnText: "← Back",
+        doneBtnText: "Done",
+        popoverClass: "tydline-tour-popover",
+        onDestroyed: () => {
+          localStorage.setItem("tydline_tour_done", "1");
+          setTourComplete(true);
+        },
+        steps: [
+          {
+            element: "#tour-reports",
+            popover: {
+              title: "Reports",
+              description: "Your live shipment overview — statuses, ETAs, and demurrage risk at a glance.",
+              side: "right",
+              align: "start",
+            },
+          },
+          {
+            element: "#tour-shipments",
+            popover: {
+              title: "Upcoming Shipments",
+              description: "See all active shipments sorted by ETA. Track containers and vessels in one place.",
+              side: "right",
+              align: "start",
+            },
+          },
+          {
+            element: "#tour-approvals",
+            popover: {
+              title: "Approvals",
+              description: "Shipments that need your sign-off before they move to active tracking.",
+              side: "right",
+              align: "start",
+            },
+          },
+          {
+            element: "#tour-notifications",
+            popover: {
+              title: "Notifications",
+              description: "Configure who gets alerted and when — email, WhatsApp, or both.",
+              side: "right",
+              align: "start",
+            },
+          },
+          {
+            element: "#tour-settings",
+            popover: {
+              title: "Settings",
+              description: "Manage your tracking email, WhatsApp number, and account preferences.",
+              side: "right",
+              align: "start",
+            },
+          },
+        ],
+      });
+      driverObj.drive();
+    }, 400);
+
+    return () => clearTimeout(t);
+  // run once on mount
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function handleLogout() {
     try { await api.logout(); } catch { /* best effort */ }

@@ -79,6 +79,7 @@ export default function Pricing() {
       amount: "50.00",
       label: "$50 / mo",
       plan: "starter",
+      channel: starterChannel,
     });
   }
 

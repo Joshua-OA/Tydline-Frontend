@@ -5,6 +5,7 @@ export interface SelectedPackage {
   amount: string;
   label: string;
   plan: "starter" | "growth" | "pro" | "custom";
+  channel?: "email" | "whatsapp";
 }
 
 interface AppState {
@@ -61,9 +62,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setSubStatus(null);
     setTrackingEmailState(null);
     setSelectedPackageState(null);
-    ["tydline_user_id", "tydline_sub_status", "tydline_tracking_email", "tydline_package"].forEach((k) =>
-      localStorage.removeItem(k)
-    );
+    [
+      "tydline_user_id",
+      "tydline_sub_status",
+      "tydline_tracking_email",
+      "tydline_package",
+      "tydline_auth_email",
+      "tydline_tour_done",
+      "tydline_wa_prompt_dismissed",
+      "tydline_wa_toast_dismissed",
+    ].forEach((k) => localStorage.removeItem(k));
   };
 
   return (
