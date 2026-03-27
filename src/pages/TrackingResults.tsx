@@ -74,7 +74,7 @@ function ChannelBadge({ icon, label }: { icon: React.ReactNode; label: string })
 export default function TrackingResults() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
-  const { setSelectedPackage, selectedPackage, userId } = useApp();
+  const { setSelectedPackage, selectedPackage, userId, setUser, setTrackingEmail, setWaPhone } = useApp();
 
   const query = params.get("q") ?? "";
 
@@ -104,6 +104,9 @@ export default function TrackingResults() {
   const [email, setEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [otp, setOtp] = useState("");
+  const [otpSubmitting, setOtpSubmitting] = useState(false);
+  const [otpError, setOtpError] = useState("");
   const [notifyEmail, setNotifyEmail] = useState("");
   const [notifySubmitted, setNotifySubmitted] = useState(false);
   const [notifyError, setNotifyError] = useState("");
@@ -199,6 +202,37 @@ export default function TrackingResults() {
       setError(e instanceof Error ? e.message : "Something went wrong.");
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function handleVerifyOtp() {
+    const code = otp.trim();
+    if (!code) { setOtpError("Please enter the code from your email."); return; }
+    const savedEmail = email.trim() || (localStorage.getItem("tydline_auth_email") ?? "");
+    if (!savedEmail) { setOtpError("Could not find email address. Please go back and try again."); return; }
+    setOtpError("");
+    setOtpSubmitting(true);
+    try {
+      const res = await api.verifyOtp(savedEmail, code);
+      setUser(res.user_id, res.subscription_status);
+      if (res.tracking_email) setTrackingEmail(res.tracking_email);
+      if (res.wa_phone) setWaPhone(res.wa_phone);
+      setTimeout(() => {
+        if (res.subscription_status === "none") {
+          const hasPlan = !!localStorage.getItem("tydline_package");
+          navigate(hasPlan ? "/onboarding" : "/no-subscription");
+        } else if (res.subscription_status === "pending") {
+          navigate("/onboarding");
+        } else if (!res.tracking_email && !res.wa_phone) {
+          navigate("/onboarding?step=tracking-email");
+        } else {
+          navigate("/dashboard");
+        }
+      }, 300);
+    } catch (e) {
+      setOtpError(e instanceof Error ? e.message : "Invalid or expired code. Please try again.");
+    } finally {
+      setOtpSubmitting(false);
     }
   }
 
@@ -695,13 +729,35 @@ export default function TrackingResults() {
                 <div className="flex flex-col gap-1.5">
                   <h2 className="text-[#052698] text-xl font-heading font-extrabold tracking-tight">Check your email</h2>
                   <p className="text-sm text-black leading-relaxed">
-                    We sent a secure login link to{" "}
-                    <span className="text-[#052698] font-medium">{email}</span>.
-                  </p>
-                  <p className="text-sm text-black leading-relaxed">
-                    Click the link to continue to payment.
+                    We sent a login link and a one-time code to{" "}
+                    <span className="text-[#052698] font-medium">{email || localStorage.getItem("tydline_auth_email") || "your email"}</span>.
                   </p>
                 </div>
+
+                {/* OTP entry */}
+                <div className="w-full flex flex-col gap-3 text-left">
+                  <p className="text-sm text-black/60 text-center">Click the link in the email, or enter the 6-digit code below:</p>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={otp}
+                      onChange={(e) => { setOtp(e.target.value.replace(/\D/g, "").slice(0, 6)); setOtpError(""); }}
+                      placeholder="000000"
+                      disabled={otpSubmitting}
+                      className="flex-1 border-[#052698] border-[0.45px] px-4 py-2.5 text-[#545454] bg-white text-lg tracking-[0.3em] text-center font-medium disabled:opacity-50"
+                    />
+                    <button
+                      onClick={handleVerifyOtp}
+                      disabled={otpSubmitting || otp.length !== 6}
+                      className="bg-[#052698] text-white text-sm font-medium px-5 py-2.5 hover:bg-[#052698]/90 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                    >
+                      {otpSubmitting ? "Verifying…" : "Verify →"}
+                    </button>
+                  </div>
+                  {otpError && <p className="text-red-500 text-sm">{otpError}</p>}
+                </div>
+
                 <div className="border border-[#052698]/15 bg-[#FCFDFF] px-5 py-4 text-sm text-black text-left w-full">
                   Didn't receive it? Check your spam folder, or{" "}
                   <button onClick={() => goToStep("auth")} className="text-[#052698] underline cursor-pointer">

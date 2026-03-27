@@ -76,6 +76,12 @@ export const api = {
   verifyToken: (token: string) =>
     apiFetch<{ user_id: string; subscription_status: "pending" | "active" | "none"; tracking_email: string | null; wa_phone: string | null }>(`/auth/verify?token=${token}`),
 
+  verifyOtp: (email: string, otp: string) =>
+    apiFetch<{ user_id: string; subscription_status: "pending" | "active" | "none"; tracking_email: string | null; wa_phone: string | null }>("/auth/verify-otp", {
+      method: "POST",
+      body: JSON.stringify({ email, otp }),
+    }),
+
   logout: () =>
     apiFetch<{ message: string }>("/auth/logout", { method: "POST" }),
 
