@@ -34,7 +34,7 @@ function Approvals() {
     }
 
     fetchApprovals(true);
-    const interval = setInterval(() => fetchApprovals(false), 30_000);
+    const interval = setInterval(() => fetchApprovals(false), 5_000);
     return () => clearInterval(interval);
   }, []);
 
