@@ -43,6 +43,7 @@ const countryCodes = [
   { code: "+234", flag: "🇳🇬", label: "NG" },
   { code: "+254", flag: "🇰🇪", label: "KE" },
   { code: "+233", flag: "🇬🇭", label: "GH" },
+  { code: "+232", flag: "🇸🇱", label: "SL" },
   { code: "+212", flag: "🇲🇦", label: "MA" },
   { code: "+971", flag: "🇦🇪", label: "AE" },
   { code: "+966", flag: "🇸🇦", label: "SA" },
