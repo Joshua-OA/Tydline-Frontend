@@ -17,6 +17,7 @@ const COUNTRY_CODES = [
   { code: "+255", flag: "🇹🇿", name: "Tanzania" },
   { code: "+256", flag: "🇺🇬", name: "Uganda" },
   { code: "+250", flag: "🇷🇼", name: "Rwanda" },
+  { code: "+232", flag: "🇸🇱", name: "Sierra Leone" },
   { code: "+225", flag: "🇨🇮", name: "Côte d'Ivoire" },
   { code: "+237", flag: "🇨🇲", name: "Cameroon" },
   { code: "+212", flag: "🇲🇦", name: "Morocco" },
