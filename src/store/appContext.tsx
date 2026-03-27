@@ -12,10 +12,12 @@ interface AppState {
   userId: string | null;
   subscriptionStatus: "pending" | "active" | "none" | null;
   trackingEmail: string | null;
+  waPhone: string | null;
   selectedPackage: SelectedPackage | null;
   setUser: (userId: string, status: "pending" | "active" | "none") => void;
   setSubscriptionActive: () => void;
   setTrackingEmail: (email: string) => void;
+  setWaPhone: (phone: string) => void;
   setSelectedPackage: (pkg: SelectedPackage) => void;
   clearUser: () => void;
 }
@@ -29,6 +31,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   );
   const [trackingEmail, setTrackingEmailState] = useState<string | null>(
     () => localStorage.getItem("tydline_tracking_email")
+  );
+  const [waPhone, setWaPhoneState] = useState<string | null>(
+    () => localStorage.getItem("tydline_wa_phone")
   );
   const [selectedPackage, setSelectedPackageState] = useState<SelectedPackage | null>(() => {
     const stored = localStorage.getItem("tydline_package");
@@ -52,6 +57,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("tydline_tracking_email", email);
   };
 
+  const setWaPhone = (phone: string) => {
+    setWaPhoneState(phone);
+    localStorage.setItem("tydline_wa_phone", phone);
+  };
+
   const setSelectedPackage = (pkg: SelectedPackage) => {
     setSelectedPackageState(pkg);
     localStorage.setItem("tydline_package", JSON.stringify(pkg));
@@ -61,11 +71,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setUserId(null);
     setSubStatus(null);
     setTrackingEmailState(null);
+    setWaPhoneState(null);
     setSelectedPackageState(null);
     [
       "tydline_user_id",
       "tydline_sub_status",
       "tydline_tracking_email",
+      "tydline_wa_phone",
       "tydline_package",
       "tydline_auth_email",
       "tydline_tour_done",
@@ -80,10 +92,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
         userId,
         subscriptionStatus,
         trackingEmail,
+        waPhone,
         selectedPackage,
         setUser,
         setSubscriptionActive,
         setTrackingEmail,
+        setWaPhone,
         setSelectedPackage,
         clearUser,
       }}

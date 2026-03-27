@@ -90,15 +90,15 @@ export default function Pricing() {
   }
 
   return (
-    <div className="w-screen min-h-screen bg-[#F9E4D2] px-4 md:px-16">
+    <div className="w-screen min-h-screen bg-[#F9E4D2] lg:px-5">
       <div
         className="w-full min-h-screen bg-[#FFF9F5] flex flex-col border-x-[0.5px] border-[#052698]/30"
         style={{ backgroundImage: brickSvg }}
       >
         <Header />
 
-        <div className="flex flex-col items-center px-4 pt-10 pb-14">
-            <div className="w-full max-w-3xl flex flex-col gap-6 mx-auto scale-90 origin-top">
+        <div className="flex flex-col items-center px-6 md:px-10 pt-10 pb-14">
+            <div className="w-full max-w-5xl flex flex-col gap-6 mx-auto">
 
               {/* Heading */}
               <div className="text-center">
@@ -116,7 +116,7 @@ export default function Pricing() {
                   <div className="flex flex-col gap-2.5">
                     <p className="text-[#052698] font-heading font-bold text-lg">Starter</p>
                     <p className="text-[#052698] font-heading font-extrabold text-4xl">$50</p>
-                    <p className="text-[15px] text-black/80 -mt-1">per month</p>
+                    <p className="text-[15px] text-black/80 -mt-1">per month · $6.25 per container</p>
                     <div className="flex gap-1.5 flex-wrap">
                       <ChannelBadge icon={<EmailIcon size={11} muted />} label="Email" />
                       <ChannelBadge icon={<WhatsAppIcon size={11} muted />} label="WhatsApp" />
@@ -125,10 +125,15 @@ export default function Pricing() {
                   </div>
                   <div className="border border-[#052698]/15 bg-white px-3 py-2 flex items-center gap-2">
                     <ShipIcon />
-                    <span className="text-sm text-[#052698] font-medium">10 shipments / mo</span>
+                    <span className="text-sm text-[#052698] font-medium">8 containers / mo</span>
                   </div>
-                  <ul className="flex flex-col gap-2">
-                    {["ETA alerts", "Basic delay alerts", "Single notification channel"].map((f) => (
+                  <ul className="flex flex-col gap-2 flex-1">
+                    {[
+                      "Email or WhatsApp alerts",
+                      "12 milestone notifications per container",
+                      "7-day free window alert",
+                      "Single user access",
+                    ].map((f) => (
                       <li key={f} className="flex items-start gap-2 text-sm text-black">
                         <CheckIcon />{f}
                       </li>
@@ -163,15 +168,15 @@ export default function Pricing() {
                   </button>
                 </div>
 
-                {/* Growth */}
+                {/* Standard */}
                 <div className="flex flex-col border border-[#052698] bg-[#FCFDFF] p-6 gap-5 relative">
                   <span className="absolute -top-px left-5 bg-[#052698] text-white text-[10px] px-2 py-0.5 font-medium tracking-wide">
                     MOST POPULAR
                   </span>
                   <div className="flex flex-col gap-2.5">
-                    <p className="text-[#052698] font-heading font-bold text-lg">Growth</p>
-                    <p className="text-[#052698] font-heading font-extrabold text-4xl">$125</p>
-                    <p className="text-[15px] text-black/80 -mt-1">per month</p>
+                    <p className="text-[#052698] font-heading font-bold text-lg">Standard</p>
+                    <p className="text-[#052698] font-heading font-extrabold text-4xl">$200</p>
+                    <p className="text-[15px] text-black/80 -mt-1">per month · $10.00 per container</p>
                     <div className="flex gap-1.5 flex-wrap">
                       <ChannelBadge icon={<EmailIcon size={11} />} label="Email" />
                       <ChannelBadge icon={<WhatsAppIcon size={11} />} label="WhatsApp" />
@@ -179,17 +184,23 @@ export default function Pricing() {
                   </div>
                   <div className="border border-[#052698]/15 bg-white px-3 py-2 flex items-center gap-2">
                     <ShipIcon />
-                    <span className="text-sm text-[#052698] font-medium">40 shipments / mo</span>
+                    <span className="text-sm text-[#052698] font-medium">20 containers / mo</span>
                   </div>
                   <ul className="flex flex-col gap-2 flex-1">
-                    {["Email + WhatsApp alerts", "ETA change alerts", "Custom alert rules", "Multi-user access"].map((f) => (
+                    {[
+                      "WhatsApp + Email alerts",
+                      "Custom milestone alerts",
+                      "21-day UCL forfeiture warning",
+                      "Multi-user access (up to 3)",
+                      "Monthly demurrage cost report",
+                    ].map((f) => (
                       <li key={f} className="flex items-start gap-2 text-sm text-black">
                         <CheckIcon />{f}
                       </li>
                     ))}
                   </ul>
                   <button
-                    onClick={() => selectPlan({ name: "Growth", amount: "125.00", label: "$125 / mo", plan: "growth" })}
+                    onClick={() => selectPlan({ name: "Standard", amount: "200.00", label: "$200 / mo", plan: "growth" })}
                     className="bg-[#052698] text-white text-sm font-medium px-4 py-3 border border-[#052698] hover:bg-[#052698]/90 transition-colors cursor-pointer mt-auto"
                   >
                     Get started
@@ -200,8 +211,8 @@ export default function Pricing() {
                 <div className="flex flex-col border border-[#052698]/20 bg-[#FCFDFF] p-6 gap-5">
                   <div className="flex flex-col gap-2.5">
                     <p className="text-[#052698] font-heading font-bold text-lg">Pro</p>
-                    <p className="text-[#052698] font-heading font-extrabold text-4xl">$1,000</p>
-                    <p className="text-[15px] text-black/80 -mt-1">per month</p>
+                    <p className="text-[#052698] font-heading font-extrabold text-4xl">$500</p>
+                    <p className="text-[15px] text-black/80 -mt-1">per month · $15.15 per container</p>
                     <div className="flex gap-1.5 flex-wrap">
                       <ChannelBadge icon={<EmailIcon size={11} />} label="Email" />
                       <ChannelBadge icon={<WhatsAppIcon size={11} />} label="WhatsApp" />
@@ -210,17 +221,24 @@ export default function Pricing() {
                   </div>
                   <div className="border border-[#052698]/15 bg-white px-3 py-2 flex items-center gap-2">
                     <ShipIcon />
-                    <span className="text-sm text-[#052698] font-medium">450 shipments / mo</span>
+                    <span className="text-sm text-[#052698] font-medium">33 containers / mo</span>
                   </div>
                   <ul className="flex flex-col gap-2 flex-1">
-                    {["Email + WhatsApp + ERP", "All alert types", "ERP / TMS integration"].map((f) => (
+                    {[
+                      "WhatsApp + Email + ERP integration",
+                      "API access for internal systems",
+                      "Unlimited users",
+                      "Priority support",
+                      "HS code lookup included",
+                      "Custom onboarding session",
+                    ].map((f) => (
                       <li key={f} className="flex items-start gap-2 text-sm text-black">
                         <CheckIcon />{f}
                       </li>
                     ))}
                   </ul>
                   <button
-                    onClick={() => selectPlan({ name: "Pro", amount: "1000.00", label: "$1,000 / mo", plan: "pro" })}
+                    onClick={() => selectPlan({ name: "Pro", amount: "500.00", label: "$500 / mo", plan: "pro" })}
                     className="bg-white text-[#052698] text-sm font-medium px-4 py-3 border border-[#052698]/30 hover:bg-[#052698]/5 transition-colors cursor-pointer mt-auto"
                   >
                     Get started

@@ -22,14 +22,14 @@ const values = [
 
 export default function About() {
   return (
-    <div className="w-screen min-h-screen bg-[#F9E4D2] px-4 md:px-16">
+    <div className="w-screen min-h-screen bg-[#F9E4D2] lg:px-5">
       <div
         className="w-full min-h-screen bg-[#FFF9F5] flex flex-col border-x-[0.5px] border-[#052698]/30"
         style={{ backgroundImage: brickSvg }}
       >
         <Header />
 
-        <div className="flex flex-col items-center px-4 pt-8 pb-12 gap-6 max-w-xl mx-auto w-full scale-90 origin-top">
+        <div className="flex flex-col items-center px-6 md:px-10 pt-8 pb-12 gap-6 max-w-4xl mx-auto w-full">
 
             {/* Hero */}
             <div className="text-center flex flex-col gap-3">

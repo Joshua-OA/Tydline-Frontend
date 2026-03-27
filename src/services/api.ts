@@ -74,7 +74,7 @@ export const api = {
     }),
 
   verifyToken: (token: string) =>
-    apiFetch<{ user_id: string; subscription_status: "pending" | "active" | "none" }>(`/auth/verify?token=${token}`),
+    apiFetch<{ user_id: string; subscription_status: "pending" | "active" | "none"; tracking_email: string | null; wa_phone: string | null }>(`/auth/verify?token=${token}`),
 
   logout: () =>
     apiFetch<{ message: string }>("/auth/logout", { method: "POST" }),
@@ -98,6 +98,9 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ code }),
     }),
+
+  requestBetaAccess: () =>
+    apiFetch<{ message: string }>("/payments/request-beta-access", { method: "POST" }),
 
   // ── Onboarding ────────────────────────────────────────────────────────────
 

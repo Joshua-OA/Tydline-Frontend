@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useSearchParams } from "react-router-dom";
 import { api, type ApiApproval } from "../../services/api";
 
 function fmtDate(s: string | null | undefined): string {
@@ -11,23 +12,22 @@ function fmtDate(s: string | null | undefined): string {
 }
 
 function Approvals() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [approvals, setApprovals] = useState<ApiApproval[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [approving, setApproving] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [conflictId, setConflictId] = useState<string | null>(null);
+  const autoApproveHandled = useRef(false);
 
   useEffect(() => {
     function fetchApprovals(isInitial = false) {
       api.getApprovals()
         .then((data) => {
-          console.log("[Approvals] raw response:", data);
-          console.log("[Approvals] is array:", Array.isArray(data));
           setApprovals(Array.isArray(data) ? data : []);
         })
         .catch((e: Error) => {
-          console.error("[Approvals] fetch error:", e);
           if (isInitial) setError(e.message);
         })
         .finally(() => { if (isInitial) setLoading(false); });
@@ -37,6 +37,17 @@ function Approvals() {
     const interval = setInterval(() => fetchApprovals(false), 30_000);
     return () => clearInterval(interval);
   }, []);
+
+  // Auto-approve when opened via email/WhatsApp link (?approve=<id>)
+  useEffect(() => {
+    const id = searchParams.get("approve");
+    if (!id || loading || autoApproveHandled.current) return;
+    autoApproveHandled.current = true;
+    // Remove the param so a refresh doesn't re-trigger
+    setSearchParams((prev) => { prev.delete("approve"); return prev; }, { replace: true });
+    handleApprove(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading]);
 
   async function handleApprove(id: string) {
     setApproving(id);

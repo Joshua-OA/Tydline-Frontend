@@ -15,8 +15,8 @@ import type { ReactNode } from "react";
 
 /** Redirect authenticated users away from public/onboarding pages → dashboard */
 function PublicRoute({ children }: { children: ReactNode }) {
-  const { userId, subscriptionStatus, trackingEmail } = useApp();
-  const isAuthenticated = !!userId && subscriptionStatus === "active" && !!trackingEmail;
+  const { userId, subscriptionStatus, trackingEmail, waPhone } = useApp();
+  const isAuthenticated = !!userId && subscriptionStatus === "active" && (!!trackingEmail || !!waPhone);
   return isAuthenticated ? <Navigate to="/dashboard" replace /> : <>{children}</>;
 }
 
@@ -34,7 +34,7 @@ function App() {
         <Route path="/track" element={<PublicRoute><TrackingResults /></PublicRoute>} />
         <Route path="/auth/verify" element={<AuthVerify />} />
         <Route path="/pricing" element={<PublicRoute><Pricing /></PublicRoute>} />
-        <Route path="/onboarding" element={<Onboarding />} />
+        <Route path="/onboarding" element={<PublicRoute><Onboarding /></PublicRoute>} />
         <Route path="/solutions" element={<Solutions />} />
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />

@@ -7,7 +7,7 @@ const logo = "/tydline-sqaurlogo.png";
 
 const brickSvg = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='30'%3E%3Crect x='0' y='0' width='60' height='15' fill='none' stroke='%23052698' stroke-width='0.3' opacity='0.03'/%3E%3Crect x='-30' y='15' width='60' height='15' fill='none' stroke='%23052698' stroke-width='0.3' opacity='0.03'/%3E%3Crect x='30' y='15' width='60' height='15' fill='none' stroke='%23052698' stroke-width='0.3' opacity='0.03'/%3E%3C/svg%3E")`;
 
-type Step = "payment" | "otp" | "tracking-email" | "success";
+type Step = "payment" | "tracking-email" | "success";
 
 const COUNTRY_CODES = [
   { code: "+233", flag: "🇬🇭", name: "Ghana" },
@@ -30,10 +30,11 @@ const COUNTRY_CODES = [
 export default function Onboarding() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { selectedPackage, setSubscriptionActive, setTrackingEmail, subscriptionStatus } = useApp();
+  const { selectedPackage, setSubscriptionActive, setTrackingEmail, setWaPhone, subscriptionStatus } = useApp();
+  const isWhatsAppPlan = selectedPackage?.channel === "whatsapp";
 
   const stepParam = searchParams.get("step") as Step | null;
-  const step: Step = (["payment", "otp", "tracking-email", "success"].includes(stepParam ?? "") ? stepParam! : "payment");
+  const step: Step = (["payment", "tracking-email", "success"].includes(stepParam ?? "") ? stepParam! : "payment");
 
   function goToStep(s: Step) {
     navigate(`/onboarding?step=${s}`);
@@ -69,16 +70,13 @@ export default function Onboarding() {
     return () => window.removeEventListener("popstate", onPopState);
   }, [step, navigate]);
 
-  // Payment step
-  const [countryCode, setCountryCode] = useState("+233");
-  const [phone, setPhone] = useState("");
-  const [payLoading, setPayLoading] = useState(false);
-  const [payError, setPayError] = useState("");
-
-  // Coupon
+  // Beta access step — coupon entry or request access
   const [coupon, setCoupon] = useState("");
   const [couponLoading, setCouponLoading] = useState(false);
   const [couponError, setCouponError] = useState("");
+  const [accessRequested, setAccessRequested] = useState(false);
+  const [accessLoading, setAccessLoading] = useState(false);
+  const [accessError, setAccessError] = useState("");
 
   async function handleApplyCoupon() {
     const code = coupon.trim().toUpperCase();
@@ -101,18 +99,18 @@ export default function Onboarding() {
     }
   }
 
-  // OTP step
-  const [otp, setOtp] = useState("");
-  const [otpLoading, setOtpLoading] = useState(false);
-  const [otpError, setOtpError] = useState("");
-  const [resendLoading, setResendLoading] = useState(false);
-  const [resendCooldown, setResendCooldown] = useState(0);
-
-  useEffect(() => {
-    if (resendCooldown <= 0) return;
-    const t = setTimeout(() => setResendCooldown((c) => c - 1), 1000);
-    return () => clearTimeout(t);
-  }, [resendCooldown]);
+  async function handleRequestAccess() {
+    setAccessError("");
+    setAccessLoading(true);
+    try {
+      await api.requestBetaAccess();
+      setAccessRequested(true);
+    } catch (e) {
+      setAccessError(e instanceof Error ? e.message : "Something went wrong. Please try again.");
+    } finally {
+      setAccessLoading(false);
+    }
+  }
 
   // Tracking email step — user types prefix only; suffix is fixed
   const TRACKING_SUFFIX = ".track@tydline.com";
@@ -128,6 +126,34 @@ export default function Onboarding() {
   const [tEmailError, setTEmailError] = useState("");
   const [prefixAvailability, setPrefixAvailability] = useState<"idle" | "checking" | "available" | "taken">("idle");
   const [copied, setCopied] = useState(false);
+
+  // WhatsApp setup step state
+  const [waSetupCountryCode, setWaSetupCountryCode] = useState("+233");
+  const [waSetupPhone, setWaSetupPhone] = useState("");
+  const [waSetupLoading, setWaSetupLoading] = useState(false);
+  const [waSetupError, setWaSetupError] = useState("");
+
+  async function handleSetWhatsAppPhone() {
+    const digits = waSetupPhone.trim().replace(/^0/, "");
+    if (!digits || digits.length < 7) {
+      setWaSetupError("Please enter a valid WhatsApp number.");
+      return;
+    }
+    const dialCode = waSetupCountryCode.replace("+", "");
+    const fullNumber = `${dialCode}${digits}`;
+    setWaSetupError("");
+    setWaSetupLoading(true);
+    try {
+      await api.setWhatsAppPhone(fullNumber);
+      setWaPhone(fullNumber);
+      goToStep("success");
+      setTimeout(() => navigate("/dashboard"), 1500);
+    } catch (e) {
+      setWaSetupError(e instanceof Error ? e.message : "Failed to save WhatsApp number.");
+    } finally {
+      setWaSetupLoading(false);
+    }
+  }
 
   async function checkPrefixAvailability() {
     const prefix = tEmailPrefix.trim();
@@ -149,79 +175,13 @@ export default function Onboarding() {
     });
   }
 
-  async function handleInitiatePayment() {
-    const digits = phone.trim().replace(/^0/, "");
-    if (!digits || digits.length < 7) {
-      setPayError("Please enter a valid phone number.");
-      return;
-    }
-    const dialCode = countryCode.replace("+", "");
-    const fullNumber = `${dialCode}${digits}`;
-    setPayError("");
-    setPayLoading(true);
-    try {
-      const planKey = selectedPackage?.plan ?? "starter";
-      const apiPlan = (["starter", "growth", "pro"] as const).includes(planKey as "starter" | "growth" | "pro")
-        ? (planKey as "starter" | "growth" | "pro")
-        : "starter";
-      await api.initiatePayment(fullNumber, apiPlan);
-      setResendCooldown(30);
-      goToStep("otp");
-    } catch (e) {
-      setPayError(e instanceof Error ? e.message : "Payment initiation failed.");
-    } finally {
-      setPayLoading(false);
-    }
-  }
-
-  async function handleResendOTP() {
-    const digits = phone.trim().replace(/^0/, "");
-    if (!digits || digits.length < 7) return;
-    const dialCode = countryCode.replace("+", "");
-    const fullNumber = `${dialCode}${digits}`;
-    setResendLoading(true);
-    setOtpError("");
-    try {
-      const planKey = selectedPackage?.plan ?? "starter";
-      const apiPlan = (["starter", "growth", "pro"] as const).includes(planKey as "starter" | "growth" | "pro")
-        ? (planKey as "starter" | "growth" | "pro")
-        : "starter";
-      await api.initiatePayment(fullNumber, apiPlan);
-      setOtp("");
-      setResendCooldown(30);
-    } catch (e) {
-      setOtpError(e instanceof Error ? e.message : "Failed to resend OTP. Please try again.");
-    } finally {
-      setResendLoading(false);
-    }
-  }
-
-  async function handleConfirmOTP() {
-    const code = otp.trim();
-    if (!code || code.length < 4) {
-      setOtpError("Please enter the OTP sent to your phone.");
-      return;
-    }
-    setOtpError("");
-    setOtpLoading(true);
-    try {
-      await api.confirmOTP(code);
-      setSubscriptionActive();
-      goToStep("tracking-email");
-    } catch (e) {
-      setOtpError(e instanceof Error ? e.message : "OTP confirmation failed.");
-    } finally {
-      setOtpLoading(false);
-    }
-  }
-
   async function handleSetTrackingEmail() {
     const prefix = tEmailPrefix.trim().toLowerCase();
     if (!prefix || !/^[a-z0-9][a-z0-9.-]*[a-z0-9]$/.test(prefix)) {
       setTEmailError("Use only letters, numbers, dots, or hyphens — e.g. yourcompany");
       return;
     }
-    if (prefixAvailability === "idle") {
+    if (prefixAvailability === "idle" && selectedPackage?.channel !== "whatsapp") {
       // Availability hasn't been checked yet — trigger it and wait for the result to show
       checkPrefixAvailability();
       return;
@@ -246,12 +206,12 @@ export default function Onboarding() {
     }
   }
 
-  const steps: Step[] = ["payment", "otp", "tracking-email"];
+  const steps: Step[] = ["payment", "tracking-email"];
   const stepIndex = steps.indexOf(step);
-  const stepLabels = ["Payment", "Confirm", "Setup"];
+  const stepLabels = ["Access", "Setup"];
 
   return (
-    <div className="w-screen min-h-screen bg-[#F9E4D2] px-2 md:px-5">
+    <div className="w-screen min-h-screen bg-[#F9E4D2] lg:px-5">
       <div
         className="w-full min-h-screen bg-[#FFF9F5] flex flex-col border-x-[0.5px] border-[#052698]/30"
         style={{ backgroundImage: brickSvg }}
@@ -277,7 +237,7 @@ export default function Onboarding() {
         <div className="flex-1 flex flex-col items-center py-10 px-4">
           {/* No package selected guard */}
           {!selectedPackage && step === "payment" && (
-            <div className="w-full max-w-md border border-[#052698]/15 bg-[#FCFDFF] p-5 mb-6 flex flex-col gap-3">
+            <div className="w-full max-w-lg border border-[#052698]/15 bg-[#FCFDFF] p-5 mb-6 flex flex-col gap-3">
               <p className="text-[15px] text-black font-medium">No plan selected</p>
               <p className="text-[13.5px] text-black/60">It looks like your plan selection was lost. Please choose a plan to continue.</p>
               <button
@@ -290,7 +250,7 @@ export default function Onboarding() {
           )}
 
           {step !== "success" && (
-            <div className="w-full max-w-md flex flex-col gap-8">
+            <div className="w-full max-w-lg flex flex-col gap-8">
               {/* Step indicator */}
               <div className="flex items-center gap-0">
                 {stepLabels.map((label, i) => (
@@ -322,68 +282,25 @@ export default function Onboarding() {
                 ))}
               </div>
 
-              {/* STEP: payment */}
+              {/* STEP: payment — beta access */}
               {step === "payment" && (
                 <div className="flex flex-col gap-5">
                   <div>
-                    <h2 className="text-[#052698] text-[25.5px] font-heading font-extrabold tracking-tight">Complete payment</h2>
+                    <h2 className="text-[#052698] text-[25.5px] font-heading font-extrabold tracking-tight">Get access</h2>
                     <p className="text-black/60 text-[15.5px] mt-1">
-                      You selected the <span className="text-[#052698] font-semibold">{selectedPackage?.name ?? "—"}</span> plan
-                      {selectedPackage ? ` — ${selectedPackage.label}` : ""}.
+                      You selected the <span className="text-[#052698] font-semibold">{selectedPackage?.name ?? "—"}</span> plan.
                     </p>
                   </div>
 
-                  <div className="border border-[#052698]/15 bg-[#FCFDFF] p-4 flex items-center justify-between">
-                    <span className="text-[15.5px] text-black/60">Amount due</span>
-                    <span className="text-[#052698] font-heading font-bold text-[19.5px]">
-                      GHS {selectedPackage?.amount ?? "—"}
-                    </span>
+                  {/* Beta notice */}
+                  <div className="border border-[#052698]/25 bg-[#FCFDFF] p-4 flex flex-col gap-1.5">
+                    <p className="text-[14.5px] font-semibold text-[#052698]">🚀 This is a beta</p>
+                    <p className="text-[14.5px] text-black/70 leading-relaxed">
+                      Tydline is currently in private beta. Enter your coupon code below to get started, or request one and we'll email it to you.
+                    </p>
                   </div>
 
-                  <div className="flex flex-col gap-1">
-                    <label className="text-[13.5px] text-black/60 uppercase tracking-widest">MoMo phone number</label>
-                    <div className="flex border-[0.45px] border-[#052698] bg-white">
-                      <select
-                        value={countryCode}
-                        onChange={(e) => setCountryCode(e.target.value)}
-                        disabled={payLoading}
-                        className="border-r border-[#052698]/20 bg-transparent px-3 py-2.5 text-[15.5px] text-black focus:outline-none cursor-pointer disabled:opacity-50"
-                      >
-                        {COUNTRY_CODES.map((c) => (
-                          <option key={c.code} value={c.code}>
-                            {c.flag} {c.code}
-                          </option>
-                        ))}
-                      </select>
-                      <input
-                        type="tel"
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
-                        placeholder="XXXXXXXXX"
-                        disabled={payLoading}
-                        className="flex-1 px-4 py-2.5 text-black bg-transparent text-[15.5px] focus:outline-none disabled:opacity-50"
-                      />
-                    </div>
-                    <p className="text-[13.5px] text-black/40">Enter your MTN or Vodafone Cash number without the leading 0</p>
-                  </div>
-
-                  {payError && <p className="text-red-500 text-[15.5px]">{payError}</p>}
-
-                  <button
-                    onClick={handleInitiatePayment}
-                    disabled={payLoading || !selectedPackage}
-                    className="bg-[#052698] text-white text-[15.5px] font-medium px-6 py-3 hover:bg-[#052698]/90 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {payLoading ? "Processing…" : `Pay GHS ${selectedPackage?.amount ?? "—"} →`}
-                  </button>
-
-                  {/* Coupon — alternative to MoMo */}
-                  <div className="flex items-center gap-3">
-                    <div className="h-px flex-1 bg-[#052698]/10" />
-                    <span className="text-[13px] text-black/40 uppercase tracking-widest">or</span>
-                    <div className="h-px flex-1 bg-[#052698]/10" />
-                  </div>
-
+                  {/* Coupon entry */}
                   <div className="flex flex-col gap-1.5">
                     <label className="text-[13.5px] text-black/60 uppercase tracking-widest">Coupon code</label>
                     <div className="flex gap-2">
@@ -398,165 +315,203 @@ export default function Onboarding() {
                       <button
                         onClick={handleApplyCoupon}
                         disabled={couponLoading || !coupon.trim()}
-                        className="bg-white border border-[#052698]/30 text-[#052698] text-[15.5px] font-medium px-5 py-2.5 hover:bg-[#052698]/5 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap"
+                        className="bg-[#052698] text-white text-[15.5px] font-medium px-5 py-2.5 hover:bg-[#052698]/90 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap"
                       >
-                        {couponLoading ? "Applying…" : "Apply"}
+                        {couponLoading ? "Applying…" : "Apply →"}
                       </button>
                     </div>
                     {couponError && <p className="text-red-500 text-[14px]">{couponError}</p>}
                   </div>
-                </div>
-              )}
 
-              {/* STEP: otp */}
-              {step === "otp" && (
-                <div className="flex flex-col gap-5">
-                  <div>
-                    <h2 className="text-black text-[25.5px] font-heading font-extrabold tracking-tight">Enter OTP</h2>
-                    <p className="text-black/60 text-[15.5px] mt-1">
-                      We sent a one-time code to your MoMo number. Enter it below to confirm the payment.
-                    </p>
+                  {/* Divider */}
+                  <div className="flex items-center gap-3">
+                    <div className="h-px flex-1 bg-[#052698]/10" />
+                    <span className="text-[13px] text-black/40 uppercase tracking-widest">don't have one?</span>
+                    <div className="h-px flex-1 bg-[#052698]/10" />
                   </div>
 
-                  <div className="flex flex-col gap-1">
-                    <label className="text-[13.5px] text-black/60 uppercase tracking-widest">OTP code</label>
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      value={otp}
-                      onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                      placeholder="123456"
-                      disabled={otpLoading}
-                      className="border-[#052698] border-[0.45px] px-4 py-2.5 text-black bg-white text-[15.5px] w-full tracking-[0.3em] disabled:opacity-50"
-                    />
-                  </div>
-
-                  {otpError && <p className="text-red-500 text-[15.5px]">{otpError}</p>}
-
-                  <button
-                    onClick={handleConfirmOTP}
-                    disabled={otpLoading}
-                    className="bg-[#052698] text-white text-[15.5px] font-medium px-6 py-3 hover:bg-[#052698]/90 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {otpLoading ? "Confirming…" : "Confirm payment →"}
-                  </button>
-
-                  <div className="flex items-center justify-between">
-                    <button
-                      onClick={() => goToStep("payment")}
-                      className="text-[15.5px] text-black/50 hover:text-black transition-colors cursor-pointer"
-                    >
-                      ← Use a different number
-                    </button>
-                    <button
-                      onClick={handleResendOTP}
-                      disabled={resendLoading || resendCooldown > 0}
-                      className="text-[15.5px] text-[#052698] hover:text-[#052698]/70 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-                    >
-                      {resendLoading ? "Sending…" : resendCooldown > 0 ? `Resend in ${resendCooldown}s` : "Resend OTP"}
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* STEP: tracking-email */}
-              {step === "tracking-email" && (
-                <div className="flex flex-col gap-5">
-                  <div>
-                    <h2 className="text-[#052698] text-[26.8px] font-heading font-extrabold tracking-tight">Set up tracking</h2>
-                    <p className="text-black/70 text-[16.8px] mt-1">
-                      Choose your tracking address. Shipping notifications forwarded here are automatically parsed by Tydline.
-                    </p>
-                  </div>
-
-                  {/* Notice */}
-                  <div className="border border-[#052698]/20 bg-[#FCFDFF] p-4 flex flex-col gap-1.5">
-                    <p className="text-[14.8px] font-medium text-[#052698]">How it works</p>
-                    <p className="text-[14.8px] text-black/70 leading-relaxed">
-                      When your carrier sends a shipping update to your email, <span className="text-black font-medium">forward it or CC</span> your Tydline tracking address. We extract the data and send you alerts via {selectedPackage?.plan === "pro" ? "email, WhatsApp, and ERP" : selectedPackage?.plan === "growth" ? "email and WhatsApp" : selectedPackage?.channel === "whatsapp" ? "WhatsApp" : "email"} automatically.
-                    </p>
-                  </div>
-
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[14.8px] text-black/60 uppercase tracking-widest">Your tracking address</label>
-                    {/* Split input: editable prefix + fixed suffix */}
-                    <div className="flex border-[0.45px] border-[#052698] bg-white">
-                      <input
-                        type="text"
-                        value={tEmailPrefix}
-                        onChange={(e) => {
-                          setTEmailPrefix(e.target.value.toLowerCase().replace(/[^a-z0-9.-]/g, ""));
-                          setPrefixAvailability("idle");
-                          setTEmailError("");
-                        }}
-                        onBlur={checkPrefixAvailability}
-                        placeholder="yourcompany"
-                        disabled={tEmailLoading}
-                        className="flex-1 min-w-0 px-4 py-2.5 text-black bg-transparent text-[16.8px] focus:outline-none disabled:opacity-50"
-                      />
-                      <span className="flex items-center pr-4 text-[16.8px] text-black/35 select-none whitespace-nowrap">
-                        .track@tydline.com
-                      </span>
-                    </div>
-                    {prefixAvailability === "checking" && (
-                      <p className="text-[14.8px] text-black/50">Checking availability…</p>
-                    )}
-                    {prefixAvailability === "available" && (
-                      <p className="text-[14.8px] text-green-600 flex items-center gap-1.5">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M20 6L9 17l-5-5" /></svg>
-                        Available
-                      </p>
-                    )}
-                    {prefixAvailability === "taken" && (
-                      <p className="text-[14.8px] text-red-500 flex items-center gap-1.5">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
-                        Already taken — try another
-                      </p>
-                    )}
-                    {prefixAvailability === "idle" && (
-                      <p className="text-[14.8px] text-black/50">
-                        Letters, numbers, dots and hyphens only. This will be your permanent tracking address.
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Live preview with copy */}
-                  {tEmailPrefix.trim() && (
-                    <div className="border border-[#052698]/15 bg-[#FCFDFF] px-4 py-3 flex items-center justify-between gap-3">
-                      <div className="flex flex-col gap-0.5 min-w-0">
-                        <span className="text-[14.8px] text-black/60">Your address will be:</span>
-                        <span className="text-[14.8px] font-medium text-[#052698] break-all">
-                          {tEmailPrefix.trim()}.track@tydline.com
-                        </span>
+                  {/* Request access */}
+                  {accessRequested ? (
+                    <div className="border border-green-200 bg-green-50 px-4 py-3 flex items-start gap-3">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.5" strokeLinecap="round" className="shrink-0 mt-0.5"><path d="M20 6L9 17l-5-5" /></svg>
+                      <div>
+                        <p className="text-[14.5px] font-medium text-green-800">Request received!</p>
+                        <p className="text-[13.5px] text-green-700 mt-0.5">Check your email — we'll send a coupon shortly so you can get started.</p>
                       </div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-2">
                       <button
-                        onClick={copyTrackingEmail}
-                        className="shrink-0 flex items-center gap-1.5 text-[14.8px] text-[#052698]/70 hover:text-[#052698] transition-colors cursor-pointer"
+                        onClick={handleRequestAccess}
+                        disabled={accessLoading}
+                        className="w-full border border-[#052698]/30 text-[#052698] text-[15.5px] font-medium px-6 py-3 hover:bg-[#052698]/5 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        {copied ? (
-                          <>
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M20 6L9 17l-5-5" /></svg>
-                            Copied
-                          </>
-                        ) : (
-                          <>
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="1" /><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" /></svg>
-                            Copy
-                          </>
-                        )}
+                        {accessLoading ? "Sending request…" : "Request a coupon →"}
                       </button>
+                      {accessError && <p className="text-red-500 text-[14px]">{accessError}</p>}
+                      <p className="text-[13px] text-black/40 text-center">We'll email a coupon to the address you signed up with.</p>
                     </div>
                   )}
+                </div>
+              )}
 
-                  {tEmailError && <p className="text-red-500 text-[16.8px]">{tEmailError}</p>}
+              {/* STEP: tracking-email — branches on channel */}
+              {step === "tracking-email" && (
+                <div className="flex flex-col gap-5">
+                  {isWhatsAppPlan ? (
+                    /* ── WhatsApp-only setup ── */
+                    <>
+                      <div>
+                        <h2 className="text-[#052698] text-[26.8px] font-heading font-extrabold tracking-tight">Set up WhatsApp alerts</h2>
+                        <p className="text-black/70 text-[16.8px] mt-1">
+                          Enter the WhatsApp number you want shipping alerts sent to.
+                        </p>
+                      </div>
 
-                  <button
-                    onClick={handleSetTrackingEmail}
-                    disabled={tEmailLoading || !tEmailPrefix.trim() || prefixAvailability === "taken" || prefixAvailability === "checking"}
-                    className="bg-[#052698] text-white text-[15.5px] font-medium px-6 py-3 hover:bg-[#052698]/90 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {tEmailLoading ? "Saving…" : "Go to dashboard →"}
-                  </button>
+                      <div className="border border-[#052698]/20 bg-[#FCFDFF] p-4 flex flex-col gap-1.5">
+                        <p className="text-[14.8px] font-medium text-[#052698]">How it works</p>
+                        <p className="text-[14.8px] text-black/70 leading-relaxed">
+                          When your carrier sends a shipping update, forward that email to your Tydline address. We parse it and send you an instant alert via <span className="text-black font-medium">WhatsApp</span>.
+                        </p>
+                      </div>
+
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-[14.8px] text-black/60 uppercase tracking-widest">WhatsApp number</label>
+                        <div className="flex border-[0.45px] border-[#052698] bg-white">
+                          <select
+                            value={waSetupCountryCode}
+                            onChange={(e) => setWaSetupCountryCode(e.target.value)}
+                            disabled={waSetupLoading}
+                            className="bg-white px-3 py-2.5 text-[16.8px] text-black border-r border-[#052698]/30 focus:outline-none disabled:opacity-50 cursor-pointer"
+                          >
+                            {COUNTRY_CODES.map((c) => (
+                              <option key={c.code} value={c.code}>{c.flag} {c.code}</option>
+                            ))}
+                          </select>
+                          <input
+                            type="tel"
+                            value={waSetupPhone}
+                            onChange={(e) => { setWaSetupPhone(e.target.value.replace(/\D/g, "")); setWaSetupError(""); }}
+                            placeholder="244123456"
+                            disabled={waSetupLoading}
+                            className="flex-1 min-w-0 px-4 py-2.5 text-black bg-transparent text-[16.8px] focus:outline-none disabled:opacity-50"
+                          />
+                        </div>
+                        <p className="text-[14.8px] text-black/50">Must be active on WhatsApp. Omit the leading 0.</p>
+                      </div>
+
+                      {waSetupError && <p className="text-red-500 text-[16.8px]">{waSetupError}</p>}
+
+                      <button
+                        onClick={handleSetWhatsAppPhone}
+                        disabled={waSetupLoading || !waSetupPhone.trim()}
+                        className="bg-[#052698] text-white text-[15.5px] font-medium px-6 py-3 hover:bg-[#052698]/90 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {waSetupLoading ? "Saving…" : "Go to dashboard →"}
+                      </button>
+                    </>
+                  ) : (
+                    /* ── Email tracking address setup ── */
+                    <>
+                      <div>
+                        <h2 className="text-[#052698] text-[26.8px] font-heading font-extrabold tracking-tight">Set up tracking</h2>
+                        <p className="text-black/70 text-[16.8px] mt-1">
+                          Choose your tracking address. Shipping notifications forwarded here are automatically parsed by Tydline.
+                        </p>
+                      </div>
+
+                      <div className="border border-[#052698]/20 bg-[#FCFDFF] p-4 flex flex-col gap-1.5">
+                        <p className="text-[14.8px] font-medium text-[#052698]">How it works</p>
+                        <p className="text-[14.8px] text-black/70 leading-relaxed">
+                          When your carrier sends a shipping update to your email, <span className="text-black font-medium">forward it or CC</span> your Tydline tracking address. We extract the data and send you alerts via {selectedPackage?.plan === "pro" ? "email, WhatsApp, and ERP" : selectedPackage?.plan === "growth" ? "email and WhatsApp" : "email"} automatically.
+                        </p>
+                      </div>
+
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-[14.8px] text-black/60 uppercase tracking-widest">Your tracking address</label>
+                        <div className="flex border-[0.45px] border-[#052698] bg-white">
+                          <input
+                            type="text"
+                            value={tEmailPrefix}
+                            onChange={(e) => {
+                              setTEmailPrefix(e.target.value.toLowerCase().replace(/[^a-z0-9.-]/g, ""));
+                              setPrefixAvailability("idle");
+                              setTEmailError("");
+                            }}
+                            onBlur={checkPrefixAvailability}
+                            placeholder="yourcompany"
+                            disabled={tEmailLoading}
+                            className="flex-1 min-w-0 px-4 py-2.5 text-black bg-transparent text-[16.8px] focus:outline-none disabled:opacity-50"
+                          />
+                          <span className="flex items-center pr-4 text-[16.8px] text-black/35 select-none whitespace-nowrap">
+                            .track@tydline.com
+                          </span>
+                        </div>
+                        {prefixAvailability === "checking" && (
+                          <p className="text-[14.8px] text-black/50">Checking availability…</p>
+                        )}
+                        {prefixAvailability === "available" && (
+                          <p className="text-[14.8px] text-green-600 flex items-center gap-1.5">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M20 6L9 17l-5-5" /></svg>
+                            Available
+                          </p>
+                        )}
+                        {prefixAvailability === "taken" && (
+                          <p className="text-[14.8px] text-red-500 flex items-center gap-1.5">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                            Already taken — try another
+                          </p>
+                        )}
+                        {prefixAvailability === "idle" && (
+                          <p className="text-[14.8px] text-black/50">
+                            Letters, numbers, dots and hyphens only. This will be your permanent tracking address.
+                          </p>
+                        )}
+                      </div>
+
+                      {tEmailPrefix.trim() && (
+                        <div className="border border-[#052698]/15 bg-[#FCFDFF] px-4 py-3 flex items-center justify-between gap-3">
+                          <div className="flex flex-col gap-0.5 min-w-0">
+                            <span className="text-[14.8px] text-black/60">Your address will be:</span>
+                            <span className="text-[14.8px] font-medium text-[#052698] break-all">
+                              {tEmailPrefix.trim()}.track@tydline.com
+                            </span>
+                          </div>
+                          <button
+                            onClick={copyTrackingEmail}
+                            className="shrink-0 flex items-center gap-1.5 text-[14.8px] text-[#052698]/70 hover:text-[#052698] transition-colors cursor-pointer"
+                          >
+                            {copied ? (
+                              <>
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M20 6L9 17l-5-5" /></svg>
+                                Copied
+                              </>
+                            ) : (
+                              <>
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="1" /><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" /></svg>
+                                Copy
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      )}
+
+                      {tEmailError && <p className="text-red-500 text-[16.8px]">{tEmailError}</p>}
+
+                      <button
+                        onClick={handleSetTrackingEmail}
+                        disabled={
+                          tEmailLoading ||
+                          !tEmailPrefix.trim() ||
+                          prefixAvailability === "taken" ||
+                          prefixAvailability === "checking"
+                        }
+                        className="bg-[#052698] text-white text-[15.5px] font-medium px-6 py-3 hover:bg-[#052698]/90 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {tEmailLoading ? "Saving…" : "Go to dashboard →"}
+                      </button>
+                    </>
+                  )}
                 </div>
               )}
             </div>

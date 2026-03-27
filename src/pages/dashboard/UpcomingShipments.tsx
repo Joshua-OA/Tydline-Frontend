@@ -397,7 +397,7 @@ function UpcomingShipments() {
 
                   <div className="shrink-0 md:w-56 md:mr-8">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-[#052698] font-medium text-[16.6px]">{s.id}</span>
+                      <span className="text-[#052698] font-medium text-[16.6px]">{s.bill_of_lading ?? s.container_number ?? s.id}</span>
                       <span className={`text-[14.6px] px-2 py-0.5 ${statusStyles[label] ?? "bg-black/5 text-black/80"}`}>{label}</span>
                     </div>
                     <p className="text-black text-[16.6px] mt-1">{s.vessel} · {s.line}</p>

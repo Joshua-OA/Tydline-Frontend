@@ -9,7 +9,7 @@ const brickSvg = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/s
 export default function AuthVerify() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
-  const { setUser, setSelectedPackage, subscriptionStatus, trackingEmail } = useApp();
+  const { setUser, setSelectedPackage, setTrackingEmail, setWaPhone, subscriptionStatus, trackingEmail, waPhone } = useApp();
 
   const [status, setStatus] = useState<"verifying" | "success" | "error">("verifying");
   const [, setErrorMsg] = useState("");
@@ -36,6 +36,7 @@ export default function AuthVerify() {
             name: meta.plan_name,
             amount: meta.plan_amount,
             label: meta.plan_label,
+            channel: (meta.plan_channel as SelectedPackage["channel"]) ?? undefined,
           });
         }
       } catch {
@@ -47,6 +48,8 @@ export default function AuthVerify() {
       .verifyToken(token)
       .then((res) => {
         setUser(res.user_id, res.subscription_status);
+        if (res.tracking_email) setTrackingEmail(res.tracking_email);
+        if (res.wa_phone) setWaPhone(res.wa_phone);
         setStatus("success");
 
         // Small delay so the user sees the success state before redirect
@@ -60,7 +63,7 @@ export default function AuthVerify() {
           } else if (res.subscription_status === "pending") {
             // Returning user who started payment but never completed it.
             navigate("/onboarding");
-          } else if (!trackingEmail) {
+          } else if (!trackingEmail && !waPhone) {
             navigate("/onboarding?step=tracking-email");
           } else {
             navigate("/dashboard");
@@ -81,7 +84,7 @@ export default function AuthVerify() {
   }, []);
 
   return (
-    <div className="w-screen h-screen bg-[#F9E4D2] px-2 md:px-5">
+    <div className="w-screen h-screen bg-[#F9E4D2] lg:px-5">
       <div
         className="w-full h-full bg-[#FFF9F5] flex flex-col border-x-[0.5px] border-[#052698]/30"
         style={{ backgroundImage: brickSvg }}

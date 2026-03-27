@@ -239,7 +239,7 @@ export default function TrackingResults() {
   }
 
   return (
-    <div className="w-screen h-screen bg-[#F9E4D2] px-2 md:px-5">
+    <div className="w-screen h-screen bg-[#F9E4D2] lg:px-5">
       <div
         className="w-full h-full bg-[#FFF9F5] flex flex-col border-x-[0.5px] border-[#052698]/30 overflow-hidden"
         style={{ backgroundImage: brickSvg }}

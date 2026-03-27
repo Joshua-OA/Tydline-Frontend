@@ -6,7 +6,7 @@ function HeadingSection() {
       >
         TASA — your AI agent for zero — delay imports.
       </h1>
-      <p className="text-center text-[#545454] w-[95%] md:w-[75%] mt-2 text-xs md:text-sm leading-relaxed px-2 md:px-0">
+      <p className="text-center text-[#545454] w-full mt-2 text-[16.6px] leading-relaxed px-2 md:px-0">
         Finally eliminate demurrage fees and protect your margins. Get
         continuous, real-time updates across <br className="hidden md:inline" /> WhatsApp, email, and your ERP so
         your cargo never sits waiting.

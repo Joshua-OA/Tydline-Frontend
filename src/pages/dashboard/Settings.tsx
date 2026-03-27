@@ -113,7 +113,11 @@ function Settings({ waPhoneSet, onWaPhoneUpdated }: { waPhoneSet?: boolean | nul
 
   const plan = planInfo?.plan ?? selectedPackage?.plan ?? "starter";
   const planDisplay = planLabel[plan] ?? plan;
-  const hasWhatsApp = plan === "growth" || plan === "pro" || plan === "custom";
+  const hasWhatsApp =
+    plan === "growth" ||
+    plan === "pro" ||
+    plan === "custom" ||
+    (plan === "starter" && selectedPackage?.channel === "whatsapp");
 
   // Derive connected state: prop or local fetch
   const phoneConnected = waPhone !== null || waPhoneSet === true;
@@ -237,13 +241,25 @@ function Settings({ waPhoneSet, onWaPhoneUpdated }: { waPhoneSet?: boolean | nul
         <div className="flex flex-col gap-3">
           {/* Mail — available on all plans */}
           <div className="flex items-center justify-between border border-[#052698]/12 p-3">
-            <div>
+            <div className="min-w-0">
               <p className="text-[16.6px] text-black font-medium">Mail</p>
-              <span className="text-[14.6px] px-2 py-0.5 border text-green-600 border-green-200 bg-green-50 mt-1 inline-block">Connected</span>
+              {trackingEmail ? (
+                <div className="flex items-center gap-2 mt-1 flex-wrap">
+                  <span className="text-[14.6px] px-2 py-0.5 border text-green-600 border-green-200 bg-green-50 inline-block">Connected</span>
+                  <span className="text-[14.6px] text-[#052698] font-medium break-all">{trackingEmail}</span>
+                </div>
+              ) : (
+                <span className="text-[14.6px] px-2 py-0.5 border text-amber-700 border-amber-200 bg-amber-50 mt-1 inline-block">Not set up</span>
+              )}
             </div>
-            <button className="border border-[#052698]/25 text-[#052698] text-[16.6px] px-3 py-1.5 hover:bg-[#052698]/5 transition-colors cursor-pointer">
-              Disconnect
-            </button>
+            {trackingEmail && (
+              <button
+                onClick={() => navigator.clipboard.writeText(trackingEmail)}
+                className="border border-[#052698]/25 text-[#052698] text-[14.6px] px-3 py-1.5 hover:bg-[#052698]/5 transition-colors cursor-pointer shrink-0 ml-3"
+              >
+                Copy address
+              </button>
+            )}
           </div>
 
           {/* WhatsApp — Growth / Pro / Custom only */}
